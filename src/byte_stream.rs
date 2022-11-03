@@ -722,6 +722,7 @@ mod tests {
             for _i in 0..NREPS {
                 let rd1 = rand::thread_rng().gen_range(1..=1000000);
                 let size = MIN_WRITE + (rd1 % (MAX_WRITE - MIN_WRITE));
+                // https://github.com/HKarimiA/rust-generate-random-string
                 let d: String = (0..size)
                     .map(|_| {
                         let idx = rand::thread_rng().gen_range(0..CHARSET.len());
