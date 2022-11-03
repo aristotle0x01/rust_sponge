@@ -22,6 +22,7 @@ include       = [
   "CHANGELOG.md",
   "src/*.rs",
   "examples/*.rs",
+  "tests/*.rs",
 ]
 
 # For documentation of features see the `mio::features` module.
