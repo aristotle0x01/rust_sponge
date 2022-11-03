@@ -13,4 +13,4 @@
 // macros used internally
 #[macro_use]
 
-mod byte_stream;
+pub mod byte_stream;
