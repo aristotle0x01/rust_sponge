@@ -1,7 +1,7 @@
 use std::env;
-use std::str;
-use std::net::{TcpStream, ToSocketAddrs};
 use std::io::{Read, Write};
+use std::net::{TcpStream, ToSocketAddrs};
+use std::str;
 
 // ./webget cs144.keithw.org /hello
 
@@ -38,7 +38,7 @@ fn get_url(host: &String, url: &String) {
     match TcpStream::connect(server_details) {
         Ok(mut stream) => {
             println!("Successfully connected to server {}", host);
-            
+
             let s1 = format!("GET {} HTTP/1.1\r\n", url);
             stream.write(s1.as_bytes()).unwrap();
             let s2 = format!("Host: {}\r\n", host);
@@ -54,14 +54,20 @@ fn get_url(host: &String, url: &String) {
                 // Read from the current data in the TcpStream
                 let bytes_read = stream.read(&mut rx_bytes);
                 match bytes_read {
-                    Ok(n) => if n == 0 {break;},
-                    _ => {break;},
+                    Ok(n) => {
+                        if n == 0 {
+                            break;
+                        }
+                    }
+                    _ => {
+                        break;
+                    }
                 }
 
                 let text = str::from_utf8(&rx_bytes).unwrap();
                 println!("{}", text);
             }
-        },
+        }
         Err(e) => {
             println!("Failed to connect: {}", e);
         }
