@@ -1,0 +1,41 @@
+[package]
+edition = "2021"
+name = "rust-sponge"
+# When releasing to crates.io:
+# - Update CHANGELOG.md.
+# - Create git tag
+version       = "0.0.1"
+license       = "MIT"
+authors       = [
+  "aristotle0x01@protonmail.com",
+]
+description   = "rust version of cs144 labs"
+homepage      = "https://github.com/aristotle0x01/rust_sponge"
+repository    = "https://github.com/aristotle0x01/rust_sponge.git"
+readme        = "README.md"
+keywords      = ["rust", "tcp", "socket"]
+categories    = ["tcp"]
+include       = [
+  "Cargo.toml",
+  "LICENSE",
+  "README.md",
+  "CHANGELOG.md",
+  "src/*.rs",
+  "examples/*.rs",
+  "tests/*.rs",
+]
+
+# For documentation of features see the `mio::features` module.
+[features]
+# By default Mio only provides a shell implementation.
+default = []
+
+[dependencies]
+log = "0.4.8"
+
+[dev-dependencies]
+env_logger = { version = "0.8.4", default-features = false }
+rand = "0.8"
+
+[[example]]
+name = "webget"

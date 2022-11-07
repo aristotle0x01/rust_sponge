@@ -1,2 +1,12 @@
 /build
 /.ccls-cache
+
+
+# Added by cargo
+
+target/*
+.idea/*
+.DS_Store
+*.iml
+test.rs
+test
