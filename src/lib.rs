@@ -17,3 +17,4 @@ pub type SizeT = usize;
 
 pub mod byte_stream;
 pub mod stream_reassembler;
+pub mod wrapping_integers;
