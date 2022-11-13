@@ -8,5 +8,5 @@ target/*
 .idea/*
 .DS_Store
 *.iml
-test.rs
+examples/test.rs
 test
