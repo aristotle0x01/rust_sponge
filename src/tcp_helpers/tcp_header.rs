@@ -6,16 +6,16 @@ use crate::SizeT;
 pub struct TCPHeader {
     sport: u16,
     dport: u16,
-    pub(crate) seqno: WrappingInt32,
-    ackno: WrappingInt32,
+    pub seqno: WrappingInt32,
+    pub ackno: WrappingInt32,
     doff: u8,
     urg: bool,
-    ack: bool,
+    pub ack: bool,
     psh: bool,
-    rst: bool,
-    pub(crate) syn: bool,
-    pub(crate) fin: bool,
-    win: u16,
+    pub rst: bool,
+    pub syn: bool,
+    pub fin: bool,
+    pub win: u16,
     pub(crate) cksum: u16,
     uptr: u16,
 }
@@ -23,7 +23,7 @@ impl TCPHeader {
     pub const LENGTH: SizeT = 20 as SizeT;
 
     #[allow(dead_code)]
-    pub fn new(_capacity: SizeT) -> TCPHeader {
+    pub fn new() -> TCPHeader {
         TCPHeader {
             sport: 0,
             dport: 0,

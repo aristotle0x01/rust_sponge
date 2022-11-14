@@ -10,6 +10,14 @@ pub struct TCPSegment {
     payload: Buffer,
 }
 impl TCPSegment {
+    #[allow(dead_code)]
+    pub fn new(head: TCPHeader, load: Buffer) -> TCPSegment {
+        TCPSegment {
+            header: head,
+            payload: load,
+        }
+    }
+
     pub fn parse(&mut self, _buffer: &Buffer, _datagram_layer_checksum: u32) -> ParseResult {
         let mut check = InternetChecksum::new(_datagram_layer_checksum);
         check.add(_buffer.str());
