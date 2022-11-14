@@ -1,5 +1,3 @@
-use crate::StringView;
-
 #[derive(Debug)]
 pub struct InternetChecksum {
     sum: u32,
@@ -26,8 +24,8 @@ impl InternetChecksum {
     }
 
     #[allow(dead_code)]
-    pub fn add(&mut self, data: StringView<'_>) {
-        let bytes = data.as_bytes();
+    pub fn add(&mut self, data: &[u8]) {
+        let bytes = data;
         for _i in 0..bytes.len() {
             let mut val: u16 = bytes[_i] as u16;
             if !self.parity {

@@ -134,27 +134,27 @@ impl NetUnparser {
         NetUnparser {}
     }
 
-    pub fn u32(s: &mut String, val: u32) {
+    pub fn u32(s: &mut Vec<u8>, val: u32) {
         let len: SizeT = 4;
         for _i in 0..len {
             let the_byte: u8 = ((val >> ((len - _i - 1) * 8)) & 0xff) as u8;
-            s.push(the_byte as char);
+            s.push(the_byte);
         }
     }
 
-    pub fn u16(s: &mut String, val: u16) {
+    pub fn u16(s: &mut Vec<u8>, val: u16) {
         let len: SizeT = 2;
         for _i in 0..len {
             let the_byte: u8 = ((val >> ((len - _i - 1) * 8)) & 0xff) as u8;
-            s.push(the_byte as char);
+            s.push(the_byte);
         }
     }
 
-    pub fn u8(s: &mut String, val: u8) {
+    pub fn u8(s: &mut Vec<u8>, val: u8) {
         let len: SizeT = 1;
         for _i in 0..len {
             let the_byte: u8 = ((val >> ((len - _i - 1) * 8)) & 0xff) as u8;
-            s.push(the_byte as char);
+            s.push(the_byte);
         }
     }
 }

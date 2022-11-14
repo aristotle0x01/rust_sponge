@@ -124,8 +124,12 @@ impl TCPReceiver {
         }
 
         if seg.payload().size() > 0 || _fin {
-            self.reassembler
-                .push_substring(&seg.payload().str().to_string(), stream_index, _fin);
+            // todo: copied?
+            self.reassembler.push_substring(
+                &String::from_utf8(Vec::from(seg.payload().str())).unwrap(),
+                stream_index,
+                _fin,
+            );
         }
     }
 

@@ -1,4 +1,4 @@
-use crate::{SizeT, StringView};
+use crate::SizeT;
 use std::collections::VecDeque;
 
 // semantics of c++ std::move() std::string &str
@@ -8,39 +8,40 @@ use std::collections::VecDeque;
 // Convenient and idiomatic conversions in Rust
 // https://ricardomartins.cc/2016/08/03/convenient_and_idiomatic_conversions_in_rust
 
+// What is the difference between [u8] and Vec<u8> on rust?
+// https://stackoverflow.com/questions/71377731/what-is-the-difference-between-u8-and-vecu8-on-rust
 #[derive(Debug)]
 pub struct Buffer {
-    storage: String,
+    storage: Vec<u8>,
     starting_offset: SizeT,
-    // cache: String
 }
 impl Buffer {
     pub const EMPTY: &'static str = "";
+    pub const EMPTY_VEC: &'static Vec<u8> = &Vec::new();
 
     #[allow(dead_code)]
-    pub fn new(_str: String) -> Buffer {
+    pub fn new(_bytes: Vec<u8>) -> Buffer {
         Buffer {
-            storage: _str,
+            storage: _bytes,
             starting_offset: 0,
-            // cache: "".to_string()
         }
     }
 
+    // since rust char is 4 bytes instead of one in c/c++
+    // hereby [u8] array will be used in place of c++ String
+    // besides, for network protocols it's mainly a bytes thing,
+    // not a string thing
     #[allow(dead_code)]
-    pub fn str(&self) -> StringView<'_> {
+    pub fn str(&self) -> &[u8] {
         if self.storage.is_empty() {
-            return &Buffer::EMPTY;
+            return Buffer::EMPTY_VEC;
         }
-        &self.storage[self.starting_offset..(self.storage.len() - self.starting_offset)]
-        // let t = &self.storage.as_bytes()[self.starting_offset..(self.storage.len() - self.starting_offset)];
-        // self.cache.clear();
-        // self.cache.push_str(String::from_utf8(Vec::from(t)).unwrap().as_str());
-        // self.cache.as_str()
+        &self.storage[self.starting_offset..self.storage.len()]
     }
 
     #[allow(dead_code)]
     pub fn at(&self, n: SizeT) -> u8 {
-        *self.str().as_bytes().get(n).unwrap()
+        *self.str().get(n).unwrap()
     }
 
     #[allow(dead_code)]
@@ -50,7 +51,7 @@ impl Buffer {
 
     #[allow(dead_code)]
     pub fn copy(&self) -> String {
-        String::from(self.str())
+        String::from_utf8(self.str().to_vec()).unwrap()
     }
 
     #[allow(dead_code)]
@@ -62,19 +63,6 @@ impl Buffer {
         if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
             // todo: is move possible? clear may suffice
             self.storage.clear();
-        }
-    }
-}
-impl From<BufferList> for Buffer {
-    fn from(list: BufferList) -> Self {
-        match list.buffers.len() {
-            0 => Buffer::new("".to_string()),
-            1 => {
-                let b = list.buffers().front().unwrap();
-                // todo
-                Buffer::new(b.str().to_string())
-            },
-            _ => panic!("BufferList: please use concatenate() to combine a multi-Buffer BufferList into one Buffer"),
         }
     }
 }
@@ -100,7 +88,7 @@ impl BufferList {
 
     #[allow(dead_code)]
     pub fn new_from_str(s: String) -> BufferList {
-        let buffer = Buffer::new(s);
+        let buffer = Buffer::new(s.as_bytes().to_vec());
         let mut t: VecDeque<Buffer> = VecDeque::new();
         t.push_back(buffer);
         BufferList { buffers: t }
@@ -149,7 +137,7 @@ impl BufferList {
     pub fn concatenate(&self) -> String {
         let mut s = String::new();
         for _buf in self.buffers.iter() {
-            s.push_str(_buf.str());
+            s.push_str(String::from_utf8(_buf.str().to_vec()).unwrap().as_str());
         }
 
         s
@@ -161,7 +149,12 @@ impl BufferList {
             // https://en.cppreference.com/w/cpp/container/deque/push_back
             // push_back( const T& value ): The new element is initialized as a copy of value
             // todo: copy is plausible
-            self.buffers.push_back(Buffer::new(buf.str().to_string()));
+            self.buffers.push_back(Buffer::new(
+                String::from_utf8(buf.str().to_vec())
+                    .unwrap()
+                    .as_bytes()
+                    .to_vec(),
+            ));
         }
     }
 }

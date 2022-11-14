@@ -79,7 +79,7 @@ impl TCPHeader {
         // sanity check
         assert!(self.doff < 5, "TCP header too short");
 
-        let mut ret = String::with_capacity((4 * self.doff) as usize);
+        let mut ret: Vec<u8> = Vec::with_capacity((4 * self.doff) as usize);
 
         NetUnparser::u16(&mut ret, self.sport);
         NetUnparser::u16(&mut ret, self.dport);
@@ -102,7 +102,7 @@ impl TCPHeader {
 
         ret.shrink_to((4 * self.doff) as usize);
 
-        return ret;
+        String::from_utf8(ret).unwrap()
     }
 
     pub fn to_string(&self) -> String {
