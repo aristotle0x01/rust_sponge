@@ -1,6 +1,6 @@
 use crate::receiver_harness::{
-    ExpectAckno, ExpectBytes, ExpectState, ExpectTotalAssembledBytes, ExpectUnassembledBytes,
-    ExpectWindow, SegmentArrives, TCPReceiverTestHarness,
+    ExpectAckno, ExpectState, ExpectTotalAssembledBytes, ExpectUnassembledBytes, ExpectWindow,
+    SegmentArrives, TCPReceiverTestHarness,
 };
 use rust_sponge::tcp_helpers::tcp_state::TCPReceiverStateSummary;
 use rust_sponge::wrapping_integers::WrappingInt32;
@@ -53,7 +53,7 @@ fn t_recv_connect() {
         test.execute(
             SegmentArrives::new(String::from("".to_string()))
                 .with_seqno_u32(893475)
-                .with_result(receiver_harness::Result::NOT_SYN),
+                .with_result(receiver_harness::Result::NotSyn),
         );
         test.execute(&ExpectAckno::new(Option::None));
         test.execute(&ExpectUnassembledBytes::new(0));
@@ -70,7 +70,7 @@ fn t_recv_connect() {
                 .with_ack_u32(0)
                 .with_fin()
                 .with_seqno_u32(893475)
-                .with_result(receiver_harness::Result::NOT_SYN),
+                .with_result(receiver_harness::Result::NotSyn),
         );
         test.execute(&ExpectAckno::new(Option::None));
         test.execute(&ExpectUnassembledBytes::new(0));
@@ -87,7 +87,7 @@ fn t_recv_connect() {
                 .with_ack_u32(0)
                 .with_fin()
                 .with_seqno_u32(893475)
-                .with_result(receiver_harness::Result::NOT_SYN),
+                .with_result(receiver_harness::Result::NotSyn),
         );
         test.execute(&ExpectAckno::new(Option::None));
         test.execute(&ExpectUnassembledBytes::new(0));

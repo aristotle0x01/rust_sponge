@@ -253,7 +253,7 @@ pub trait ReceiverAction: ReceiverTestStep {
 
 #[derive(PartialEq)]
 pub enum Result {
-    NOT_SYN,
+    NotSyn,
     OK,
 }
 pub struct SegmentArrives {
@@ -283,7 +283,7 @@ impl ReceiverTestStep for SegmentArrives {
 
         let res: Result;
         if receiver.ackno().is_none() {
-            res = Result::NOT_SYN;
+            res = Result::NotSyn;
         } else {
             res = Result::OK;
         }
@@ -340,7 +340,7 @@ impl SegmentArrives {
     #[allow(dead_code)]
     pub fn result_name(res: &Result) -> String {
         match res {
-            Result::NOT_SYN => "(no SYN received, so no ackno available)".to_string(),
+            Result::NotSyn => "(no SYN received, so no ackno available)".to_string(),
             Result::OK => "(SYN received, so ackno available)".to_string(),
         }
     }

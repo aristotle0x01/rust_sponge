@@ -11,3 +11,4 @@ target/*
 examples/test.rs
 test
 examples/test
+.vscode/*
