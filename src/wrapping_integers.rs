@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 use std::ops;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct WrappingInt32 {
     raw_value: u32,
 }

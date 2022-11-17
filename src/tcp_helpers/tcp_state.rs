@@ -1,4 +1,5 @@
 use crate::tcp_receiver::TCPReceiver;
+use crate::tcp_sender::TCPSender;
 
 #[derive(Debug)]
 pub struct TCPState;
@@ -12,6 +13,24 @@ impl TCPState {
             TCPReceiverStateSummary::FIN_RECV
         } else {
             TCPReceiverStateSummary::SYN_RECV
+        }
+    }
+
+    pub fn state_summary_sender(sender: &TCPSender) -> &str {
+        if sender.stream_in().error() {
+            TCPSenderStateSummary::ERROR
+        } else if sender.next_seqno_absolute() == 0 {
+            TCPSenderStateSummary::CLOSED
+        } else if sender.next_seqno_absolute() == sender.bytes_in_flight() as u64 {
+            TCPSenderStateSummary::SYN_SENT
+        } else if !sender.stream_in().eof() {
+            TCPSenderStateSummary::SYN_ACKED
+        } else if sender.next_seqno_absolute() < (sender.stream_in().bytes_written() + 2) as u64 {
+            TCPSenderStateSummary::SYN_ACKED
+        } else if sender.bytes_in_flight() != 0 {
+            TCPSenderStateSummary::FIN_SENT
+        } else {
+            TCPSenderStateSummary::FIN_ACKED
         }
     }
 }
