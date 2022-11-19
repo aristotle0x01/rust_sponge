@@ -28,8 +28,8 @@ impl TCPSegment {
         let mut p = NetParser::new(Buffer::new(_buffer.str().to_vec()));
         self.header.parse(&mut p);
         // todo: copied, not the original shared ref way
-        // self.payload = p.buffer();
-        self.payload = Buffer::new(p.buffer().str().to_vec());
+        // self.payload = p.buffer(); // c++
+        self.payload = p.buffer().clone();
 
         return p.get_error();
     }
@@ -41,15 +41,13 @@ impl TCPSegment {
 
         // calculate checksum -- taken over entire segment
         let mut check = InternetChecksum::new(_datagram_layer_checksum);
-        check.add(header_out.serialize().as_bytes());
+        let serialized = header_out.serialize();
+        check.add(serialized.as_bytes());
         check.add(self.payload.str());
         header_out.cksum = check.value();
 
-        // todo
-        let mut ret = BufferList::new(Buffer::new(header_out.serialize().into_bytes()));
-        // ret.append(&BufferList::new(Buffer::new(self.payload.str().to_string())));
-        // ret.append(&BufferList::from(Buffer::new(self.payload.str().to_string())));
-        ret.append(&Buffer::new(self.payload.str().to_vec()).into());
+        let mut ret = BufferList::new(Buffer::new(serialized.into_bytes()));
+        ret.append(&self.payload.clone().into());
 
         ret
     }
