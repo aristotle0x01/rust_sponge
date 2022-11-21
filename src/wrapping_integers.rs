@@ -95,6 +95,13 @@ impl ops::Add<WrappingInt32> for WrappingInt32 {
         WrappingInt32::new(self.raw_value() + rhs.raw_value())
     }
 }
+impl ops::Add<u32> for WrappingInt32 {
+    type Output = WrappingInt32;
+
+    fn add(self, rhs: u32) -> Self::Output {
+        WrappingInt32::new(self.raw_value() + rhs)
+    }
+}
 impl ops::Sub<WrappingInt32> for WrappingInt32 {
     type Output = WrappingInt32;
 
