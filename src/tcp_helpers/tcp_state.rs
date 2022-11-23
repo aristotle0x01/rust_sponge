@@ -1,9 +1,53 @@
 use crate::tcp_receiver::TCPReceiver;
 use crate::tcp_sender::TCPSender;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum State {
+    LISTEN = 0,
+    SynRcvd,
+    SynSent,
+    ESTABLISHED,
+    CloseWait,
+    LastAck,
+    FinWait1,
+    FinWait2,
+    CLOSING,
+    TimeWait,
+    CLOSED,
+    RESET,
+}
+
 #[derive(Debug)]
-pub struct TCPState;
+pub struct TCPState {
+    sender: String,
+    receiver: String,
+    active: bool,
+    linger_after_streams_finish: bool,
+}
 impl TCPState {
+    #[allow(dead_code)]
+    pub fn new(
+        sender_: &TCPSender,
+        receiver_: &TCPReceiver,
+        active_: bool,
+        linger_: bool,
+    ) -> TCPState {
+        TCPState {
+            sender: TCPState::state_summary_sender(sender_).to_string(),
+            receiver: TCPState::state_summary(receiver_).to_string(),
+            active: active_,
+            linger_after_streams_finish: linger_,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn name(&self) -> String {
+        format!(
+            "sender=`{}`, receiver=`{}`, active={}, linger_after_streams_finish={}",
+            self.sender, self.receiver, self.active, self.linger_after_streams_finish
+        )
+    }
+
     pub fn state_summary(receiver: &TCPReceiver) -> &str {
         if receiver.stream_out().error() {
             TCPReceiverStateSummary::ERROR
@@ -31,6 +75,103 @@ impl TCPState {
             TCPSenderStateSummary::FIN_SENT
         } else {
             TCPSenderStateSummary::FIN_ACKED
+        }
+    }
+}
+impl From<State> for TCPState {
+    fn from(stat: State) -> Self {
+        match stat {
+            State::LISTEN => TCPState {
+                receiver: TCPReceiverStateSummary::LISTEN.to_string(),
+                sender: TCPSenderStateSummary::CLOSED.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::SynRcvd => TCPState {
+                receiver: TCPReceiverStateSummary::SYN_RECV.to_string(),
+                sender: TCPSenderStateSummary::SYN_SENT.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::SynSent => TCPState {
+                receiver: TCPReceiverStateSummary::LISTEN.to_string(),
+                sender: TCPSenderStateSummary::SYN_SENT.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::ESTABLISHED => TCPState {
+                receiver: TCPReceiverStateSummary::SYN_RECV.to_string(),
+                sender: TCPSenderStateSummary::SYN_ACKED.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::CloseWait => TCPState {
+                receiver: TCPReceiverStateSummary::FIN_RECV.to_string(),
+                sender: TCPSenderStateSummary::SYN_ACKED.to_string(),
+                active: true,
+                linger_after_streams_finish: false,
+            },
+            State::LastAck => TCPState {
+                receiver: TCPReceiverStateSummary::FIN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_SENT.to_string(),
+                active: true,
+                linger_after_streams_finish: false,
+            },
+            State::CLOSING => TCPState {
+                receiver: TCPReceiverStateSummary::FIN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_SENT.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::FinWait1 => TCPState {
+                receiver: TCPReceiverStateSummary::SYN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_SENT.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::FinWait2 => TCPState {
+                receiver: TCPReceiverStateSummary::SYN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_ACKED.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::TimeWait => TCPState {
+                receiver: TCPReceiverStateSummary::FIN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_ACKED.to_string(),
+                active: true,
+                linger_after_streams_finish: true,
+            },
+            State::RESET => TCPState {
+                receiver: TCPReceiverStateSummary::ERROR.to_string(),
+                sender: TCPSenderStateSummary::ERROR.to_string(),
+                active: false,
+                linger_after_streams_finish: false,
+            },
+            State::CLOSED => TCPState {
+                receiver: TCPReceiverStateSummary::FIN_RECV.to_string(),
+                sender: TCPSenderStateSummary::FIN_ACKED.to_string(),
+                active: false,
+                linger_after_streams_finish: false,
+            },
+        }
+    }
+}
+impl PartialEq<Self> for TCPState {
+    fn eq(&self, other: &Self) -> bool {
+        self.active == other.active
+            && self.linger_after_streams_finish == other.linger_after_streams_finish
+            && self.sender == other.sender
+            && self.receiver == other.receiver
+    }
+}
+impl Eq for TCPState {}
+impl Clone for TCPState {
+    fn clone(&self) -> TCPState {
+        TCPState {
+            sender: self.sender.to_string(),
+            receiver: self.receiver.to_string(),
+            active: self.active,
+            linger_after_streams_finish: self.linger_after_streams_finish,
         }
     }
 }

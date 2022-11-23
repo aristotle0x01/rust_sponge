@@ -1,7 +1,7 @@
 use crate::wrapping_integers::WrappingInt32;
 use crate::SizeT;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct TCPConfig {
     pub rt_timeout: u16,
     pub recv_capacity: SizeT,

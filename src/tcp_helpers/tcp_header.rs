@@ -2,7 +2,7 @@ use crate::util::parser::{NetParser, NetUnparser, ParseResult};
 use crate::wrapping_integers::WrappingInt32;
 use crate::SizeT;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct TCPHeader {
     sport: u16,
     dport: u16,
