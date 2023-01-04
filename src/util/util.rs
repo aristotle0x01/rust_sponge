@@ -1,3 +1,18 @@
+pub fn system_call(attempt: &str, return_value: i32, errno_mask: i32) -> i32 {
+    let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
+    if return_value >= 0 || errno == errno_mask {
+        return_value
+    } else {
+        panic!(
+            "{}",
+            format!(
+                "libc::{} failed with return val:{}, errno:{}",
+                attempt, return_value, errno
+            )
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct InternetChecksum {
     sum: u32,

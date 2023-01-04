@@ -33,6 +33,7 @@ default = []
 
 [dependencies]
 log = "0.4.8"
+libc = "0.2.138"
 
 [dev-dependencies]
 env_logger = { version = "0.8.4", default-features = false }

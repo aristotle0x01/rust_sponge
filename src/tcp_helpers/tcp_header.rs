@@ -4,8 +4,8 @@ use crate::SizeT;
 
 #[derive(Debug, Copy, Clone)]
 pub struct TCPHeader {
-    sport: u16,
-    dport: u16,
+    pub sport: u16,
+    pub dport: u16,
     pub seqno: WrappingInt32,
     pub ackno: WrappingInt32,
     doff: u8,

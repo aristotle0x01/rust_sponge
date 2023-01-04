@@ -99,6 +99,11 @@ impl TCPConnection {
     }
 
     #[allow(dead_code)]
+    pub fn inbound_stream(&self) -> &ByteStream {
+        self.receiver.stream_out()
+    }
+
+    #[allow(dead_code)]
     pub fn bytes_in_flight(&self) -> SizeT {
         self.sender.bytes_in_flight()
     }
