@@ -35,7 +35,7 @@ impl InternetChecksum {
             ret = (ret >> 16) + (ret & 0xffff);
         }
 
-        !ret as u16
+        (!ret) as u16
     }
 
     #[allow(dead_code)]

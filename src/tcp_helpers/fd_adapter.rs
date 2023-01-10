@@ -1,7 +1,6 @@
 use crate::tcp_helpers::tcp_config::FdAdapterConfig;
 use crate::SizeT;
-use std::net::SocketAddrV4;
-use std::str::FromStr;
+use std::net::{Ipv4Addr, SocketAddrV4};
 
 #[derive(Debug)]
 pub struct FdAdapterBase {
@@ -13,8 +12,8 @@ impl FdAdapterBase {
     pub fn new() -> FdAdapterBase {
         FdAdapterBase {
             cfg: FdAdapterConfig {
-                source: SocketAddrV4::from_str("127.0.0.1:80").unwrap(),
-                destination: SocketAddrV4::from_str("127.0.0.1:80").unwrap(),
+                source: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
+                destination: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
                 loss_rate_dn: 0,
                 loss_rate_up: 0,
             },

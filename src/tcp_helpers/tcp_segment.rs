@@ -34,6 +34,22 @@ impl TCPSegment {
         return p.get_error();
     }
 
+    pub fn parse_u8(&mut self, _buffer: &Vec<u8>, _datagram_layer_checksum: u32) -> ParseResult {
+        let mut check = InternetChecksum::new(_datagram_layer_checksum);
+        check.add(_buffer.as_slice());
+        if check.value() != 0 {
+            return ParseResult::BadChecksum;
+        }
+
+        let mut p = NetParser::new(Buffer::new(_buffer.to_vec()));
+        self.header.parse(&mut p);
+        // todo: copied, not the original shared ref way
+        // self.payload = p.buffer(); // c++
+        self.payload = p.buffer().clone();
+
+        return p.get_error();
+    }
+
     #[allow(dead_code)]
     pub fn serialize(&mut self, _datagram_layer_checksum: u32) -> BufferList {
         let header_out = &mut self.header;
@@ -50,6 +66,19 @@ impl TCPSegment {
         ret.append(&self.payload.clone().into());
 
         ret
+    }
+
+    #[allow(dead_code)]
+    pub fn serialize_u8(&mut self, _datagram_layer_checksum: u32) -> Vec<u8> {
+        let header_out = &mut self.header;
+
+        // calculate checksum -- taken over entire segment
+        let mut check = InternetChecksum::new(_datagram_layer_checksum);
+        check.add(header_out.serialize_u8().as_ref());
+        check.add(self.payload.str());
+        header_out.cksum = check.value();
+
+        [&header_out.serialize_u8()[..], self.payload.str()].concat()
     }
 
     #[allow(dead_code)]

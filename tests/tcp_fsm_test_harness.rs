@@ -57,22 +57,28 @@ impl TestRFD {
         r >= 0
     }
 
-    pub fn read(&mut self) -> String {
-        let mut ret = String::with_capacity(TestFD::MAX_RECV);
+    pub fn read(&mut self) -> Vec<u8> {
+        let mut ret = vec![0u8; TestFD::MAX_RECV];
         let ret_read = unsafe {
             libc::recv(
                 self.fd_num(),
-                ret.as_mut_ptr() as *mut c_void,
-                ret.len(),
+                ret.as_ptr() as *mut c_void,
+                ret.capacity(),
                 libc::MSG_TRUNC,
             )
         };
-        let r = system_call("recv", ret_read as i32, libc::EAGAIN);
+        let r = system_call("recv", ret_read as i32, 0);
         if r > ret.len() as i32 {
-            panic!("TestFD unexpectedly got truncated packet.");
+            panic!(
+                "{} {} {} {}",
+                "TestFD unexpectedly got truncated packet.",
+                r,
+                ret.len(),
+                ret_read
+            );
         }
 
-        ret.shrink_to(ret_read as usize);
+        ret.resize(ret_read as usize, 0);
         self.register_read();
 
         ret
@@ -114,6 +120,7 @@ impl TestFD {
         }
     }
 
+    #[allow(dead_code)]
     pub fn write(&self, s: &mut String) {
         let vecs = [libc::iovec {
             iov_base: s.as_mut_ptr() as *mut c_void,
@@ -123,7 +130,7 @@ impl TestFD {
             msg_name: null_mut(),
             msg_namelen: 0,
             msg_iov: vecs.as_ptr() as *mut libc::iovec,
-            msg_iovlen: vecs.len() as c_int,
+            msg_iovlen: (vecs.len() as c_int) as usize,
             msg_control: null_mut(),
             msg_controllen: 0,
             msg_flags: 0,
@@ -132,11 +139,32 @@ impl TestFD {
         system_call("sendmsg", ret as i32, 0);
     }
 
+    #[allow(dead_code)]
+    pub fn write_u8(&self, s: &mut Vec<u8>) {
+        let vecs = [libc::iovec {
+            iov_base: s.as_mut_ptr() as *mut c_void,
+            iov_len: s.len(),
+        }; 1];
+        let msg = libc::msghdr {
+            msg_name: null_mut(),
+            msg_namelen: 0,
+            msg_iov: vecs.as_ptr() as *mut libc::iovec,
+            msg_iovlen: (vecs.len() as c_int) as usize,
+            msg_control: null_mut(),
+            msg_controllen: 0,
+            msg_flags: 0,
+        };
+        let ret = unsafe { libc::sendmsg(self.file_descriptor.fd_num(), &msg, libc::MSG_EOR) };
+        system_call("sendmsg", ret as i32, 0);
+    }
+
+    #[allow(dead_code)]
     pub fn can_read(&self) -> bool {
         self.recv_fd.can_read()
     }
 
-    pub fn read(&mut self) -> String {
+    #[allow(dead_code)]
+    pub fn read(&mut self) -> Vec<u8> {
         self.recv_fd.read()
     }
 }
@@ -166,6 +194,7 @@ impl TestFdAdapter {
         }
     }
 
+    #[allow(dead_code)]
     pub fn write(&self, s: &mut String) {
         let vecs = [libc::iovec {
             iov_base: s.as_mut_ptr() as *mut c_void,
@@ -175,7 +204,7 @@ impl TestFdAdapter {
             msg_name: null_mut(),
             msg_namelen: 0,
             msg_iov: vecs.as_ptr() as *mut libc::iovec,
-            msg_iovlen: vecs.len() as c_int,
+            msg_iovlen: (vecs.len() as c_int) as usize,
             msg_control: null_mut(),
             msg_controllen: 0,
             msg_flags: 0,
@@ -186,8 +215,9 @@ impl TestFdAdapter {
 
     pub fn write_seg(&mut self, seg: &mut TCPSegment) {
         self.config_segment(seg);
-        let mut s = seg.serialize(0).concatenate();
-        self.test_fd.write(&mut s);
+
+        let mut s = seg.serialize_u8(0);
+        self.test_fd.write_u8(&mut s);
     }
 
     pub fn config_segment(&self, seg: &mut TCPSegment) {
@@ -201,7 +231,7 @@ impl TestFdAdapter {
         self.test_fd.can_read()
     }
 
-    pub fn read(&mut self) -> String {
+    pub fn read(&mut self) -> Vec<u8> {
         self.test_fd.read()
     }
 }
@@ -382,8 +412,15 @@ impl TCPExpectation for ExpectSegment {
         }
 
         let mut seg = TCPSegment::new(TCPHeader::new(), Buffer::new(vec![]));
-        if ParseResult::NoError != seg.parse(&Buffer::from(harness.flt.read()), 0) {
-            assert!(false, "{}", self.violated_verb("was parsable"));
+        let bytes = harness.flt.read();
+        let ret = seg.parse_u8(&bytes, 0);
+        if ParseResult::NoError != ret {
+            assert!(
+                false,
+                "{} with result {:?}",
+                self.violated_verb("was parsable"),
+                ret
+            );
         }
 
         if self.ack.is_some() && seg.header().ack != self.ack.unwrap() {
@@ -677,6 +714,11 @@ impl ExpectOneSegment {
         ExpectOneSegment {
             base: ExpectSegment::new(),
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn base_mut(&mut self) -> &mut ExpectSegment {
+        &mut self.base
     }
 }
 
@@ -1219,6 +1261,15 @@ impl TCPTestHarness {
 
     #[allow(dead_code)]
     pub fn expect_seg(&mut self, expectation: &mut ExpectSegment, _note: String) -> TCPSegment {
+        expectation.expect_seg(self)
+    }
+
+    #[allow(dead_code)]
+    pub fn expect_one_seg(
+        &mut self,
+        expectation: &mut ExpectOneSegment,
+        _note: String,
+    ) -> TCPSegment {
         expectation.expect_seg(self)
     }
 

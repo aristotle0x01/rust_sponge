@@ -12,7 +12,7 @@ pub struct TCPConfig {
 }
 impl TCPConfig {
     pub const DEFAULT_CAPACITY: SizeT = 64000 as SizeT;
-    pub const MAX_PAYLOAD_SIZE: SizeT = 1452 as SizeT;
+    pub const MAX_PAYLOAD_SIZE: SizeT = 1000 as SizeT;
     pub const TIMEOUT_DFLT: u16 = 1000;
     pub const MAX_RETX_ATTEMPTS: u32 = 8;
 }
@@ -22,7 +22,7 @@ impl Default for TCPConfig {
             rt_timeout: TCPConfig::TIMEOUT_DFLT,
             recv_capacity: TCPConfig::DEFAULT_CAPACITY,
             send_capacity: TCPConfig::DEFAULT_CAPACITY,
-            fixed_isn: None,
+            fixed_isn: Some(WrappingInt32::new(0)),
         }
     }
 }
