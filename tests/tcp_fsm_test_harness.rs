@@ -1282,23 +1282,11 @@ impl TCPTestHarness {
 
     #[allow(dead_code)]
     pub fn in_syn_sent(cfg: &TCPConfig, tx_isn: WrappingInt32) -> TCPTestHarness {
-        let mut c = TCPConfig::from(*cfg);
+        let mut c = cfg.clone();
         c.fixed_isn = Option::from(tx_isn);
         let mut h = TCPTestHarness::new(&c);
         h.execute(&mut Connect {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1317,19 +1305,8 @@ impl TCPTestHarness {
         rx_isn: WrappingInt32,
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_syn_sent(cfg, tx_isn);
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        h.send_syn(rx_isn, Option::Some(tx_isn + 1));
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1348,19 +1325,7 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_established(cfg, tx_isn, rx_isn);
         h.send_fin(rx_isn + 1, Option::Some(tx_isn + 1));
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1378,19 +1343,7 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_close_wait(cfg, tx_isn, rx_isn);
         h.execute(&mut Close {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1410,19 +1363,7 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_established(cfg, tx_isn, rx_isn);
         h.execute(&mut Close {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1453,19 +1394,7 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_fin_wait_1(cfg, tx_isn, rx_isn);
         h.send_fin(rx_isn + 1, Option::Some(tx_isn + 1));
-        let mut expect_one_segment = ExpectOneSegment {
-            base: ExpectSegment {
-                ack: None,
-                rst: None,
-                syn: None,
-                fin: None,
-                seqno: None,
-                ackno: None,
-                win: None,
-                payload_size: None,
-                data: None,
-            },
-        };
+        let mut expect_one_segment = ExpectOneSegment::new();
         expect_one_segment
             .base
             .with_no_flags()
@@ -1505,6 +1434,14 @@ fn append_data(data: &String) -> String {
         },
         if data.len() > 16 { "..." } else { "" },
     )
+}
+
+pub fn check_segment(test: &mut TCPTestHarness, data: &String, multiple: bool, lineno: u32) {
+    println!("  check_segment");
+    test.execute(ExpectSegment::new().with_ack(true).with_payload_size(data.len()).with_data(data.clone()), "".to_string());
+    if !multiple {
+        test.execute(&mut ExpectNoSegment{}, "test failed: multiple re-tx?".to_string());
+    }
 }
 
 fn make(property_name: &str, expected_value: String, actual_value: String) -> String {
