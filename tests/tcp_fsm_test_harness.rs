@@ -343,7 +343,7 @@ impl ExpectData {
     }
 
     #[allow(dead_code)]
-    pub fn with_data(&mut self, data_: String) -> &ExpectData {
+    pub fn with_data(&mut self, data_: String) -> &mut ExpectData {
         let _ = self.data.insert(data_);
         self
     }
@@ -1438,9 +1438,18 @@ fn append_data(data: &String) -> String {
 
 pub fn check_segment(test: &mut TCPTestHarness, data: &String, multiple: bool, lineno: u32) {
     println!("  check_segment");
-    test.execute(ExpectSegment::new().with_ack(true).with_payload_size(data.len()).with_data(data.clone()), "".to_string());
+    test.execute(
+        ExpectSegment::new()
+            .with_ack(true)
+            .with_payload_size(data.len())
+            .with_data(data.clone()),
+        "".to_string(),
+    );
     if !multiple {
-        test.execute(&mut ExpectNoSegment{}, "test failed: multiple re-tx?".to_string());
+        test.execute(
+            &mut ExpectNoSegment {},
+            "test failed: multiple re-tx?".to_string(),
+        );
     }
 }
 

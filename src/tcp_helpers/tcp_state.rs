@@ -36,7 +36,7 @@ impl TCPState {
             sender: TCPState::state_summary_sender(sender_).to_string(),
             receiver: TCPState::state_summary(receiver_).to_string(),
             active: active_,
-            linger_after_streams_finish: if active_ {linger_} else {false}
+            linger_after_streams_finish: if active_ { linger_ } else { false },
         }
     }
 
