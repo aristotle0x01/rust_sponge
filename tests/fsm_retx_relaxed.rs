@@ -54,7 +54,7 @@ fn fsm_retx_relaxed() {
 
         for i in 2..TCPConfig::MAX_RETX_ATTEMPTS {
             test_1.execute(
-                &mut Tick::new(((cfg.rt_timeout << i) as u32 - i) as SizeT),
+                &mut Tick::new((((cfg.rt_timeout as u32) << i) as u32 - i) as SizeT),
                 "".to_string(),
             ); // exponentially increasing delay length
             test_1.execute(
