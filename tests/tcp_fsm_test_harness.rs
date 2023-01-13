@@ -1064,7 +1064,7 @@ impl Write {
     }
 
     #[allow(dead_code)]
-    pub fn with_bytes_written(&mut self, bytes_written_: SizeT) -> &Write {
+    pub fn with_bytes_written(&mut self, bytes_written_: SizeT) -> &mut Write {
         let _ = self.bytes_written.insert(bytes_written_);
         self
     }

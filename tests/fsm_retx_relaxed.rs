@@ -25,7 +25,7 @@ fn fsm_retx_relaxed() {
 
     // single segment re-transmit
     {
-        let tx_ackno = WrappingInt32::new(rand::thread_rng().gen_range(1..=u32::MAX));
+        let tx_ackno = WrappingInt32::new(rand::thread_rng().gen_range(0..=u32::MAX));
         let mut test_1 = TCPTestHarness::in_established(&cfg, tx_ackno - 1, tx_ackno - 1);
 
         let data = "asdf".to_string();
@@ -54,7 +54,7 @@ fn fsm_retx_relaxed() {
 
         for i in 2..TCPConfig::MAX_RETX_ATTEMPTS {
             test_1.execute(
-                &mut Tick::new(((cfg.rt_timeout << i) as u32 - i) as SizeT),
+                &mut Tick::new((((cfg.rt_timeout as u32) << i) as u32 - i) as SizeT),
                 "".to_string(),
             ); // exponentially increasing delay length
             test_1.execute(
