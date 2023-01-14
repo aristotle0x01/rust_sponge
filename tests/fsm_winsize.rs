@@ -77,7 +77,10 @@ fn fsm_winsize() {
         let mut d_out: String = String::with_capacity((swin as u32 * swin_mul) as usize);
         let mut bytes_total: SizeT = 0;
         while bytes_total < (swin_mul * swin as u32) as usize {
-            test_1.execute(&mut ExpectSegmentAvailable{}, "test 1 failed: nothing sent after write()".to_string());
+            test_1.execute(
+                &mut ExpectSegmentAvailable {},
+                "test 1 failed: nothing sent after write()".to_string(),
+            );
             let mut bytes_read: SizeT = 0;
             while test_1.can_read() {
                 let seg2 = test_1.expect_seg(
