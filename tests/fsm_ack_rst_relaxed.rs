@@ -84,9 +84,10 @@ fn fsm_ack_rst_relaxed() {
             "test 1 failed: seg queued on early seqno".to_string(),
         );
 
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_ack(true).with_ackno(base_seq);
-        test_1.execute(&mut one_seg, "test 1 failed: bad ACK".to_string());
+        test_1.execute(
+            ExpectOneSegment::new().with_ack(true).with_ackno(base_seq),
+            "test 1 failed: bad ACK".to_string(),
+        );
 
         // segment out of the window---should get an ACK
         test_1.send_byte(
@@ -99,10 +100,8 @@ fn fsm_ack_rst_relaxed() {
             &mut ExpectUnassembledBytes::new(0),
             "test 1 failed: seg queued on late seqno".to_string(),
         );
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_ack(true).with_ackno(base_seq);
         test_1.execute(
-            &mut one_seg1,
+            ExpectOneSegment::new().with_ack(true).with_ackno(base_seq),
             "test 1 failed: bad ACK on late seqno".to_string(),
         );
 
@@ -114,9 +113,12 @@ fn fsm_ack_rst_relaxed() {
             "test 1 failed: pkt not processed on next seqno".to_string(),
         );
 
-        let mut one_seg2 = ExpectOneSegment::new();
-        one_seg2.base_mut().with_ack(true).with_ackno(base_seq + 1);
-        test_1.execute(&mut one_seg2, "test 1 failed: bad ACK".to_string());
+        test_1.execute(
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(base_seq + 1),
+            "test 1 failed: bad ACK".to_string(),
+        );
 
         test_1.send_rst(base_seq + 1, Option::None);
         test_1.execute(&mut ExpectState::new(TCPState::from(RESET)), "".to_string());

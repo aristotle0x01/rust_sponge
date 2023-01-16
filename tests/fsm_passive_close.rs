@@ -55,10 +55,8 @@ fn fsm_passive_close() {
             "".to_string(),
         );
 
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_fin(true);
         let seg1 = test_2.expect_one_seg(
-            &mut one_seg1,
+            ExpectOneSegment::new().with_fin(true),
             "test 2 falied: bad seg or no FIN".to_string(),
         );
 
@@ -74,12 +72,12 @@ fn fsm_passive_close() {
 
         test_2.execute(&mut Tick::new(2), "".to_string());
 
-        let mut one_seg2 = ExpectOneSegment::new();
-        one_seg2
-            .base_mut()
-            .with_fin(true)
-            .with_seqno(seg1.header().seqno);
-        let seg2 = test_2.expect_one_seg(&mut one_seg2, "test 2 failed: bad re-tx FIN".to_string());
+        let seg2 = test_2.expect_one_seg(
+            ExpectOneSegment::new()
+                .with_fin(true)
+                .with_seqno(seg1.header().seqno),
+            "test 2 failed: bad re-tx FIN".to_string(),
+        );
 
         let rx_seqno = WrappingInt32::new(2);
         let ack_expect = rx_seqno.clone();
@@ -119,10 +117,10 @@ fn fsm_passive_close() {
         test_3.send_fin(rx_seqno, Option::Some(WrappingInt32::new(0)));
         test_3.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_ack(true).with_ackno(ack_expect);
         test_3.execute(
-            &mut one_seg1,
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(ack_expect),
             "test 3 failed: bad seg, no ACK, or wrong ackno".to_string(),
         );
 
@@ -134,10 +132,10 @@ fn fsm_passive_close() {
         test_3.send_fin(rx_seqno, Option::Some(WrappingInt32::new(0)));
         test_3.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg2 = ExpectOneSegment::new();
-        one_seg2.base_mut().with_ack(true).with_ackno(ack_expect);
         test_3.execute(
-            &mut one_seg2,
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(ack_expect),
             "test 3 falied: bad response to 2nd FIN".to_string(),
         );
 
@@ -155,10 +153,8 @@ fn fsm_passive_close() {
             "".to_string(),
         );
 
-        let mut one_seg3 = ExpectOneSegment::new();
-        one_seg3.base_mut().with_fin(true);
         let seg3 = test_3.expect_one_seg(
-            &mut one_seg3,
+            ExpectOneSegment::new().with_fin(true),
             "test 3 failed: bad seg or no FIN".to_string(),
         );
 

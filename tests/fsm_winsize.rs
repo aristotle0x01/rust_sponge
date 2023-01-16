@@ -34,13 +34,13 @@ fn fsm_winsize() {
         test_1.execute(&mut Listen {}, "".to_string());
         test_1.send_syn(seq_base, Option::None);
 
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg
-            .base_mut()
-            .with_ack(true)
-            .with_ackno(seq_base + 1)
-            .with_win(cfg.recv_capacity as u16);
-        let seg = test_1.expect_one_seg(&mut one_seg, "test 1 failed: SYN/ACK invalid".to_string());
+        let seg = test_1.expect_one_seg(
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(seq_base + 1)
+                .with_win(cfg.recv_capacity as u16),
+            "test 1 failed: SYN/ACK invalid".to_string(),
+        );
         let seg_hdr = seg.header();
 
         let ack_base = seg_hdr.seqno;

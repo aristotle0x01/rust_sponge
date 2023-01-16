@@ -44,10 +44,8 @@ fn fsm_ack_rst_win_relaxed() {
             &mut ExpectUnassembledBytes::new(0),
             "test 1 failed: seg queued on early seqno".to_string(),
         );
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_ackno(base_seq);
         test_1.execute(
-            &mut one_seg,
+            ExpectOneSegment::new().with_ackno(base_seq),
             "test 1 failed: no ack on early seqno".to_string(),
         );
 
@@ -62,10 +60,8 @@ fn fsm_ack_rst_win_relaxed() {
             &mut ExpectUnassembledBytes::new(0),
             "test 1 failed: seg queued on late seqno".to_string(),
         );
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_ackno(base_seq);
         test_1.execute(
-            &mut one_seg1,
+            ExpectOneSegment::new().with_ackno(base_seq),
             "test 1 failed: no ack on late seqno".to_string(),
         );
 
@@ -81,10 +77,8 @@ fn fsm_ack_rst_win_relaxed() {
             "seg not queued on end-of-window seqno".to_string(),
         );
 
-        let mut one_seg2 = ExpectOneSegment::new();
-        one_seg2.base_mut().with_ackno(base_seq);
         test_1.execute(
-            &mut one_seg2,
+            ExpectOneSegment::new().with_ackno(base_seq),
             "test 1 failed: no ack on end-of-window seqno".to_string(),
         );
         test_1.execute(
@@ -99,10 +93,8 @@ fn fsm_ack_rst_win_relaxed() {
             &mut ExpectUnassembledBytes::new(1),
             "seg not processed on next seqno".to_string(),
         );
-        let mut one_seg3 = ExpectOneSegment::new();
-        one_seg3.base_mut().with_ackno(base_seq + 1);
         test_1.execute(
-            &mut one_seg3,
+            ExpectOneSegment::new().with_ackno(base_seq + 1),
             "test 1 failed: no ack on next seqno".to_string(),
         );
         test_1.execute(

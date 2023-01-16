@@ -71,10 +71,10 @@ fn fsm_loopback_win() {
             test_2.execute(&mut SendSegment::new(&segs[_idx]), "".to_string());
             test_2.execute(&mut Tick::new(1), "".to_string());
 
-            let mut one_seg = ExpectOneSegment::new();
-            one_seg.base_mut().with_ack(true);
-            let s =
-                test_2.expect_one_seg(&mut one_seg, "test 2 failed: no ACK after rcvd".to_string());
+            let s = test_2.expect_one_seg(
+                ExpectOneSegment::new().with_ack(true),
+                "test 2 failed: no ACK after rcvd".to_string(),
+            );
             acks.push(s);
             test_2.execute(
                 &mut ExpectNoSegment {},

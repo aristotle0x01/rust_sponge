@@ -50,9 +50,7 @@ fn fsm_active_close() {
             &mut Tick::new((4 * cfg.rt_timeout) as SizeT),
             "".to_string(),
         );
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_fin(true);
-        test_2.execute(&mut one_seg, "".to_string());
+        test_2.execute(ExpectOneSegment::new().with_fin(true), "".to_string());
         test_2.execute(
             &mut ExpectState::new(TCPState::from(State::CLOSING)),
             "".to_string(),
@@ -95,9 +93,12 @@ fn fsm_active_close() {
         test_3.send_fin(rx_seqno, Option::Some(WrappingInt32::new(2)));
         let ack_expect = rx_seqno + 1;
         test_3.execute(&mut Tick::new(1), "".to_string());
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_ack(true).with_ackno(ack_expect);
-        test_3.execute(&mut one_seg, "test 3 failed: wrong ACK for FIN".to_string());
+        test_3.execute(
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(ack_expect),
+            "test 3 failed: wrong ACK for FIN".to_string(),
+        );
         test_3.execute(
             &mut ExpectState::new(TCPState::from(State::TimeWait)),
             "".to_string(),
@@ -122,9 +123,7 @@ fn fsm_active_close() {
             &mut Tick::new((4 * cfg.rt_timeout) as SizeT),
             "".to_string(),
         );
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_fin(true);
-        test_4.execute(&mut one_seg, "".to_string());
+        test_4.execute(ExpectOneSegment::new().with_fin(true), "".to_string());
 
         // ACK the FIN
         let rx_seqno = WrappingInt32::new(1);
@@ -136,13 +135,13 @@ fn fsm_active_close() {
         let ack_expect = rx_seqno + 1;
         test_4.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1
-            .base_mut()
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(ack_expect);
-        test_4.execute(&mut one_seg1, "".to_string());
+        test_4.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(ack_expect),
+            "".to_string(),
+        );
         test_4.execute(
             &mut Tick::new((10 * cfg.rt_timeout) as SizeT),
             "".to_string(),
@@ -176,13 +175,13 @@ fn fsm_active_close() {
         let ack_expect = rx_seqno + 1;
         test_5.execute(&mut Tick::new(1), "".to_string());
         test_5.execute(&mut ExpectLingerTimer::new(1), "".to_string());
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg
-            .base_mut()
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(ack_expect);
-        test_5.execute(&mut one_seg, "".to_string());
+        test_5.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(ack_expect),
+            "".to_string(),
+        );
 
         test_5.execute(
             &mut Tick::new((10 * cfg.rt_timeout - 10) as SizeT),
@@ -197,10 +196,10 @@ fn fsm_active_close() {
         test_5.execute(&mut ExpectLingerTimer::new(0), "".to_string());
         test_5.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_ack(true).with_ackno(ack_expect);
         test_5.execute(
-            &mut one_seg1,
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(ack_expect),
             "test 5 failed: no ACK for 2nd FIN".to_string(),
         );
 
@@ -237,10 +236,8 @@ fn fsm_active_close() {
         test_6.execute(&mut Close {}, "".to_string());
         test_6.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg1 = ExpectOneSegment::new();
-        one_seg1.base_mut().with_fin(true);
         let seg1 = test_6.expect_one_seg(
-            &mut one_seg1,
+            ExpectOneSegment::new().with_fin(true),
             "test 6 failed: bad FIN after close()".to_string(),
         );
 
@@ -254,12 +251,12 @@ fn fsm_active_close() {
             "test 6 failed: FIN re-tx was too fast".to_string(),
         );
         test_6.execute(&mut Tick::new(2), "".to_string());
-        let mut one_seg2 = ExpectOneSegment::new();
-        one_seg2
-            .base_mut()
-            .with_fin(true)
-            .with_seqno(seg1_hdr.seqno);
-        let seg2 = test_6.expect_one_seg(&mut one_seg2, "test 6 failed: bad re-tx FIN".to_string());
+        let seg2 = test_6.expect_one_seg(
+            ExpectOneSegment::new()
+                .with_fin(true)
+                .with_seqno(seg1_hdr.seqno),
+            "test 6 failed: bad re-tx FIN".to_string(),
+        );
         let seg2_hdr = seg2.header();
         let rx_seqno = WrappingInt32::new(1);
         test_6.send_fin(rx_seqno, Option::Some(WrappingInt32::new(0)));
@@ -270,9 +267,12 @@ fn fsm_active_close() {
             &mut ExpectState::new(TCPState::from(CLOSING)),
             "".to_string(),
         );
-        let mut one_seg3 = ExpectOneSegment::new();
-        one_seg3.base_mut().with_ack(true).with_ackno(ack_expect);
-        test_6.execute(&mut one_seg3, "test 6 failed: bad ACK for FIN".to_string());
+        test_6.execute(
+            ExpectOneSegment::new()
+                .with_ack(true)
+                .with_ackno(ack_expect),
+            "test 6 failed: bad ACK for FIN".to_string(),
+        );
 
         test_6.send_ack(ack_expect, seg2_hdr.seqno + 1, Option::None);
         test_6.execute(&mut Tick::new(1), "".to_string());

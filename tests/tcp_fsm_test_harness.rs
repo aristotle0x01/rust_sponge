@@ -676,6 +676,12 @@ impl ExpectSegment {
     }
 }
 
+trait AsExpectSegment {
+    fn as_expect_segment(&self) -> &ExpectSegment;
+
+    fn as_expect_segment_mut(&mut self) -> &mut ExpectSegment;
+}
+
 pub struct ExpectOneSegment {
     base: ExpectSegment,
 }
@@ -708,6 +714,15 @@ impl TCPExpectation for ExpectOneSegment {
         seg
     }
 }
+impl AsExpectSegment for ExpectOneSegment {
+    fn as_expect_segment(&self) -> &ExpectSegment {
+        &self.base
+    }
+
+    fn as_expect_segment_mut(&mut self) -> &mut ExpectSegment {
+        &mut self.base
+    }
+}
 impl ExpectOneSegment {
     #[allow(dead_code)]
     pub fn new() -> ExpectOneSegment {
@@ -719,6 +734,79 @@ impl ExpectOneSegment {
     #[allow(dead_code)]
     pub fn base_mut(&mut self) -> &mut ExpectSegment {
         &mut self.base
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ack(&mut self, ack_: bool) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_ack(ack_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_rst(&mut self, rst_: bool) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_rst(rst_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_syn(&mut self, syn_: bool) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_syn(syn_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_fin(&mut self, fin_: bool) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_fin(fin_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_no_flags(&mut self) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_no_flags();
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_seqno(&mut self, seqno_: WrappingInt32) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_seqno(seqno_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_seqno_32(&mut self, seqno_: u32) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_seqno_32(seqno_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ackno(&mut self, ackno_: WrappingInt32) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_ackno(ackno_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ackno_32(&mut self, ackno_: u32) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_ackno_32(ackno_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_win(&mut self, win_: u16) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_win(win_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_payload_size(&mut self, payload_size_: SizeT) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut()
+            .with_payload_size(payload_size_);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_data(&mut self, data_: String) -> &mut ExpectOneSegment {
+        self.as_expect_segment_mut().with_data(data_);
+        self
     }
 }
 
@@ -1286,14 +1374,14 @@ impl TCPTestHarness {
         c.fixed_isn = Option::from(tx_isn);
         let mut h = TCPTestHarness::new(&c);
         h.execute(&mut Connect {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_syn(true)
-            .with_seqno(tx_isn)
-            .with_payload_size(0);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_syn(true)
+                .with_seqno(tx_isn)
+                .with_payload_size(0),
+            "".to_string(),
+        );
 
         h
     }
@@ -1306,14 +1394,14 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_syn_sent(cfg, tx_isn);
         h.send_syn(rx_isn, Option::Some(tx_isn + 1));
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(rx_isn + 1)
-            .with_payload_size(0);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(rx_isn + 1)
+                .with_payload_size(0),
+            "".to_string(),
+        );
         h
     }
 
@@ -1325,13 +1413,13 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_established(cfg, tx_isn, rx_isn);
         h.send_fin(rx_isn + 1, Option::Some(tx_isn + 1));
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(rx_isn + 2);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(rx_isn + 2),
+            "".to_string(),
+        );
         h
     }
 
@@ -1343,15 +1431,15 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_close_wait(cfg, tx_isn, rx_isn);
         h.execute(&mut Close {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_fin(true)
-            .with_ack(true)
-            .with_seqno(tx_isn + 1)
-            .with_ackno(rx_isn + 2);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_fin(true)
+                .with_ack(true)
+                .with_seqno(tx_isn + 1)
+                .with_ackno(rx_isn + 2),
+            "".to_string(),
+        );
         h
     }
 
@@ -1363,15 +1451,15 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_established(cfg, tx_isn, rx_isn);
         h.execute(&mut Close {}, "".to_string());
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_fin(true)
-            .with_ack(true)
-            .with_ackno(rx_isn + 1)
-            .with_seqno(tx_isn + 1);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_fin(true)
+                .with_ack(true)
+                .with_ackno(rx_isn + 1)
+                .with_seqno(tx_isn + 1),
+            "".to_string(),
+        );
         h
     }
 
@@ -1394,13 +1482,13 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_fin_wait_1(cfg, tx_isn, rx_isn);
         h.send_fin(rx_isn + 1, Option::Some(tx_isn + 1));
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(rx_isn + 2);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(rx_isn + 2),
+            "".to_string(),
+        );
         h
     }
 
@@ -1412,14 +1500,13 @@ impl TCPTestHarness {
     ) -> TCPTestHarness {
         let mut h = TCPTestHarness::in_fin_wait_1(cfg, tx_isn, rx_isn);
         h.send_fin(rx_isn + 1, Option::Some(tx_isn + 2));
-
-        let mut expect_one_segment = ExpectOneSegment::new();
-        expect_one_segment
-            .base
-            .with_no_flags()
-            .with_ack(true)
-            .with_ackno(rx_isn + 2);
-        h.execute(&mut expect_one_segment, "".to_string());
+        h.execute(
+            ExpectOneSegment::new()
+                .with_no_flags()
+                .with_ack(true)
+                .with_ackno(rx_isn + 2),
+            "".to_string(),
+        );
         h
     }
 }

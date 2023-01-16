@@ -8,6 +8,8 @@ use std::cmp::min;
 use std::rc::Rc;
 use std::time::Instant;
 
+// todo: has not met the minimal performance requirement yet
+
 const len: SizeT = 100 * 1024 * 1024;
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
@@ -85,11 +87,7 @@ fn main_loop(reorder: bool) {
     }
 }
 
-fn move_segments(
-    x: &mut TCPConnection,
-    y: &mut TCPConnection,
-    reorder: bool,
-) {
+fn move_segments(x: &mut TCPConnection, y: &mut TCPConnection, reorder: bool) {
     let mut segments: Vec<Rc<TCPSegment>> = Vec::new();
 
     while !x.segments_out_mut().is_empty() {

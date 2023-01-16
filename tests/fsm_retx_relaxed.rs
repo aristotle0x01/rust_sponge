@@ -75,10 +75,8 @@ fn fsm_retx_relaxed() {
             "".to_string(),
         );
         test_1.execute(&mut ExpectState::new(TCPState::from(RESET)), "".to_string());
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg.base_mut().with_rst(true);
         test_1.execute(
-            &mut one_seg,
+            ExpectOneSegment::new().with_rst(true),
             "test 1 failed: RST on re-tx failure was malformed".to_string(),
         );
     }

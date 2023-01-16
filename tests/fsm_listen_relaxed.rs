@@ -29,14 +29,11 @@ fn fsm_listen_relaxed() {
         test_1.send_syn(WrappingInt32::new(0), Option::None);
         test_1.execute(&mut Tick::new(1), "".to_string());
 
-        let mut one_seg = ExpectOneSegment::new();
-        one_seg
-            .base_mut()
-            .with_syn(true)
-            .with_ack(true)
-            .with_ackno_32(1);
         let seg = test_1.expect_one_seg(
-            &mut one_seg,
+            ExpectOneSegment::new()
+                .with_syn(true)
+                .with_ack(true)
+                .with_ackno_32(1),
             "test 1 failed: no SYN/ACK in response to SYN".to_string(),
         );
         test_1.execute(
