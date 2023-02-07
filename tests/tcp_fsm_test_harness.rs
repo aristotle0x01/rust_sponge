@@ -5,28 +5,13 @@ use rust_sponge::tcp_helpers::tcp_header::TCPHeader;
 use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::tcp_helpers::tcp_state::TCPState;
 use rust_sponge::util::buffer::Buffer;
-use rust_sponge::util::file_descriptor::FileDescriptor;
+use rust_sponge::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use rust_sponge::util::parser::ParseResult;
 use rust_sponge::util::util::system_call;
 use rust_sponge::wrapping_integers::WrappingInt32;
 use rust_sponge::SizeT;
 use std::ffi::{c_int, c_void};
 use std::ptr::null_mut;
-
-pub trait AsFileDescriptor {
-    fn as_file_descriptor(&self) -> &FileDescriptor;
-
-    fn fd_num(&self) -> i32 {
-        self.as_file_descriptor().fd_num()
-    }
-}
-pub trait AsFileDescriptorMut: AsFileDescriptor {
-    fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor;
-
-    fn register_read(&mut self) {
-        self.as_file_descriptor_mut().register_read();
-    }
-}
 
 pub struct TestRFD {
     file_descriptor: FileDescriptor,
@@ -105,6 +90,10 @@ impl TestFD {
         }
     }
 
+    // ref:
+    //  https://d3s.mff.cuni.cz/teaching/nprg074/lecture_6/
+    //  https://stackoverflow.com/questions/11461106/socketpair-in-c-unix
+    //  https://stackoverflow.com/questions/21561919/using-socketpair-under-rust
     #[allow(dead_code)]
     pub fn new_pair() -> TestFD {
         let mut socks = [0; 2];

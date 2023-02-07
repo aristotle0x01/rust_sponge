@@ -84,7 +84,7 @@ impl FileDescriptor {
     pub fn read_into(&mut self, _buf: &mut String, _limit: u32) {
         let buffer_size: SizeT = 1024 * 1024;
         let size_to_read: SizeT = min(buffer_size, _limit as SizeT);
-        _buf.reserve_exact(size_to_read);
+        _buf.shrink_to(size_to_read);
 
         let bytes_read = unsafe {
             libc::read(
@@ -192,5 +192,25 @@ impl Clone for FileDescriptor {
 
     fn clone_from(&mut self, source: &Self) {
         self.internal_fd = source.internal_fd.clone();
+    }
+}
+
+// https://users.rust-lang.org/t/how-to-implement-inheritance-like-feature-for-rust/31159/21
+pub trait AsFileDescriptor {
+    fn as_file_descriptor(&self) -> &FileDescriptor;
+
+    fn fd_num(&self) -> i32 {
+        self.as_file_descriptor().fd_num()
+    }
+}
+pub trait AsFileDescriptorMut: AsFileDescriptor {
+    fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor;
+
+    fn register_read(&mut self) {
+        self.as_file_descriptor_mut().register_read();
+    }
+
+    fn read(&mut self, _limit: u32) -> String {
+        self.as_file_descriptor_mut().read(_limit)
     }
 }

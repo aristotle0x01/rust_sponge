@@ -11,7 +11,6 @@
 #![doc(test(attr(deny(warnings))))]
 
 // macros used internally
-// #[macro_use]
 
 pub type SizeT = usize;
 
