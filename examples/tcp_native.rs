@@ -34,7 +34,7 @@ fn main() {
         listening_socket.listen(16);
         listening_socket.accept()
     } else {
-        let mut connecting_socket = TCPSocket::new();
+        let connecting_socket = TCPSocket::new();
         connecting_socket.connect(args[1].as_str(), args[2].parse::<u16>().unwrap());
         connecting_socket
     };

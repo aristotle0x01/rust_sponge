@@ -207,6 +207,10 @@ pub trait AsFileDescriptor {
     fn fd_num(&self) -> i32 {
         self.as_file_descriptor().fd_num()
     }
+
+    fn eof(&self) -> bool {
+        self.as_file_descriptor().eof()
+    }
 }
 pub trait AsFileDescriptorMut: AsFileDescriptor {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor;

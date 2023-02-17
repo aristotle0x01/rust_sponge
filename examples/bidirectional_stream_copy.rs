@@ -31,18 +31,20 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
         input.clone(),
         Direction::In,
         Box::new(|| {
-            let length = outbound.clone().borrow().remaining_capacity() as u32;
-            outbound
-                .clone()
+            let outbound_ = outbound.clone();
+            let length = outbound_.borrow().remaining_capacity() as u32;
+            let input_ = input.clone();
+            outbound_
                 .borrow_mut()
-                .write(&input.clone().borrow_mut().read(length));
-            if input.clone().borrow().eof() {
-                outbound.clone().borrow_mut().end_input();
+                .write(&input_.borrow_mut().read(length));
+            if input_.borrow().eof() {
+                outbound_.borrow_mut().end_input();
             };
         }),
         Box::new(|| {
-            return !outbound.clone().borrow().error()
-                && outbound.clone().borrow().remaining_capacity() > 0
+            let outbound_ = outbound.clone();
+            return !outbound_.borrow().error()
+                && outbound_.borrow().remaining_capacity() > 0
                 && !inbound.clone().borrow().error();
         }),
         Box::new(|| {
@@ -55,21 +57,22 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
         socket_rc.clone(),
         Direction::Out,
         Box::new(|| {
-            let bytes_to_write = min(max_copy_length, outbound.clone().borrow().buffer_size());
-            let bytes_written = socket_rc.clone().borrow_mut().write(
-                &outbound.clone().borrow().peek_output(bytes_to_write),
-                false,
-            );
-            outbound.clone().borrow_mut().pop_output(bytes_written);
+            let outbound_ = outbound.clone();
 
-            if outbound.clone().borrow().eof() {
+            let bytes_to_write = min(max_copy_length, outbound_.borrow().buffer_size());
+            let bytes_written =
+                socket.write(&outbound_.borrow().peek_output(bytes_to_write), false);
+            outbound_.borrow_mut().pop_output(bytes_written);
+
+            if outbound_.borrow().eof() {
                 socket.shutdown(SHUT_WR);
                 *outbound_shutdown.borrow_mut() = true;
             };
         }),
         Box::new(|| {
-            return !outbound.clone().borrow().buffer_empty()
-                || (outbound.clone().borrow().eof() && !*outbound_shutdown.borrow());
+            let outbound_ = outbound.clone();
+            return !outbound_.borrow().buffer_empty()
+                || (outbound_.borrow().eof() && !*outbound_shutdown.borrow());
         }),
         Box::new(|| {
             outbound.clone().borrow_mut().end_input();
@@ -81,18 +84,20 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
         socket_rc.clone(),
         Direction::In,
         Box::new(|| {
-            let length = inbound.clone().borrow().remaining_capacity() as u32;
-            inbound
-                .clone()
+            let inbound_ = inbound.clone();
+
+            let length = inbound_.borrow().remaining_capacity() as u32;
+            inbound_
                 .borrow_mut()
                 .write(&socket_rc.clone().borrow_mut().read(length));
             if socket_rc.clone().borrow().eof() {
-                inbound.clone().borrow_mut().end_input();
+                inbound_.borrow_mut().end_input();
             };
         }),
         Box::new(|| {
-            return !inbound.clone().borrow().error()
-                && inbound.clone().borrow().remaining_capacity() > 0
+            let inbound_ = inbound.clone();
+            return !inbound_.borrow().error()
+                && inbound_.borrow().remaining_capacity() > 0
                 && !outbound.clone().borrow().error();
         }),
         Box::new(|| {
@@ -105,21 +110,24 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
         output.clone(),
         Direction::Out,
         Box::new(|| {
-            let bytes_to_write = min(max_copy_length, inbound.clone().borrow().buffer_size());
-            let bytes_written = output
-                .clone()
-                .borrow_mut()
-                .write(&inbound.clone().borrow().peek_output(bytes_to_write), false);
-            inbound.clone().borrow_mut().pop_output(bytes_written);
+            let inbound_ = inbound.clone();
+            let output_ = output.clone();
 
-            if inbound.clone().borrow().eof() {
-                output.borrow_mut().close();
+            let bytes_to_write = min(max_copy_length, inbound_.borrow().buffer_size());
+            let bytes_written = output_
+                .borrow_mut()
+                .write(&inbound_.borrow().peek_output(bytes_to_write), false);
+            inbound_.borrow_mut().pop_output(bytes_written);
+
+            if inbound_.borrow().eof() {
+                output_.borrow_mut().close();
                 *inbound_shutdown.borrow_mut() = true;
             };
         }),
         Box::new(|| {
-            return !inbound.clone().borrow().buffer_empty()
-                || (inbound.clone().borrow().eof() && !*inbound_shutdown.borrow());
+            let inbound_ = inbound.clone();
+            return !inbound_.borrow().buffer_empty()
+                || (inbound_.borrow().eof() && !*inbound_shutdown.borrow());
         }),
         Box::new(|| {
             inbound.clone().borrow_mut().end_input();
