@@ -13,7 +13,7 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
     let buffer_size: SizeT = 1048576;
 
     // Rc<RefCell<xxx>> way works here because it is used single-threaded-ly in this project
-    
+
     let socket_rc = Rc::new(RefCell::new(socket.as_file_descriptor().clone()));
     let input = Rc::new(RefCell::new(FileDescriptor::new(libc::STDIN_FILENO)));
     let output = Rc::new(RefCell::new(FileDescriptor::new(libc::STDOUT_FILENO)));
@@ -22,6 +22,11 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
     let outbound_shutdown = Rc::new(RefCell::new(false));
     let inbound_shutdown = Rc::new(RefCell::new(false));
 
+    // note: values in a scope are dropped in the opposite order they are defined
+    // ref: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/first-edition/lifetimes.html#lifetimes-1
+    // if eventloop defined before socket_rc..., then compile error be like:
+    //      | `inbound` dropped here while still borrowed
+    //      | borrow might be used here, when `eventloop` is dropped and runs the destructor for type `EventLoop<'_>`
     let mut eventloop = EventLoop::new();
 
     socket.set_blocking(false);
