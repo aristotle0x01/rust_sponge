@@ -1,8 +1,8 @@
-use crate::SizeT;
 use crate::tcp_helpers::ipv4_header::IPv4Header;
 use crate::util::buffer::Buffer;
 use crate::util::parser::{NetParser, ParseResult};
 use crate::util::util::InternetChecksum;
+use crate::SizeT;
 
 #[derive(Debug)]
 pub struct IPv4Datagram {

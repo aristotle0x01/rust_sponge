@@ -1,12 +1,13 @@
 use rust_sponge::tcp_helpers::ipv4_datagram::IPv4Datagram;
 use rust_sponge::tcp_helpers::ipv4_header::IPv4Header;
+use rust_sponge::tcp_helpers::tcp_header::TCPHeader;
 use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
 use rust_sponge::util::parser::ParseResult;
 use rust_sponge::util::tun::TunFD;
 use rust_sponge::SizeT;
-use rust_sponge::tcp_helpers::tcp_header::TCPHeader;
+use std::mem;
 
 fn hexdump(d: &str, size: SizeT) {
     println!("hexdump:{} {}", d.len(), size);
@@ -16,7 +17,7 @@ fn hexdump(d: &str, size: SizeT) {
 fn main() {
     let mut tun = TunFD::new("tun144");
     loop {
-        let buffer = tun.read(1024*1024*2);
+        let buffer = tun.read(1024 * 1024 * 2);
         println!("\n\n***\n*** Got packet:\n***\n");
         hexdump(&buffer, buffer.len());
 

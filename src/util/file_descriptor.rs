@@ -74,14 +74,14 @@ impl FileDescriptor {
 
     #[allow(dead_code)]
     pub fn read(&mut self, _limit: u32) -> String {
-        let mut s = String::new();
+        let mut s: Vec<u8> = Vec::with_capacity(_limit as usize);
         self.read_into(&mut s, _limit);
 
-        s
+        String::from_utf8(s).unwrap()
     }
 
     #[allow(dead_code)]
-    pub fn read_into(&mut self, _buf: &mut String, _limit: u32) {
+    pub fn read_into(&mut self, _buf: &mut Vec<u8>, _limit: u32) {
         let buffer_size: SizeT = 1024 * 1024;
         let size_to_read: SizeT = min(buffer_size, _limit as SizeT);
         _buf.shrink_to(size_to_read);
@@ -94,6 +94,11 @@ impl FileDescriptor {
             )
         };
         system_call("read", bytes_read as i32, 0);
+        unsafe {
+            // important to set len since libc::read only write to pointer
+            _buf.set_len(bytes_read as usize);
+        }
+
         if _limit > 0 && bytes_read == 0 {
             self.internal_fd.borrow_mut().eof = true;
         }
@@ -210,7 +215,23 @@ pub trait AsFileDescriptorMut: AsFileDescriptor {
         self.as_file_descriptor_mut().register_read();
     }
 
+    fn register_write(&mut self) {
+        self.as_file_descriptor_mut().register_write();
+    }
+
     fn read(&mut self, _limit: u32) -> String {
         self.as_file_descriptor_mut().read(_limit)
+    }
+
+    fn write(&mut self, _buf: &String, _write_all: bool) -> SizeT {
+        self.as_file_descriptor_mut().write(_buf, _write_all)
+    }
+
+    fn close(&mut self) {
+        self.as_file_descriptor_mut().close();
+    }
+
+    fn set_blocking(&mut self, _blocking_state: bool) {
+        self.as_file_descriptor_mut().set_blocking(_blocking_state);
     }
 }

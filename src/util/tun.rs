@@ -1,8 +1,8 @@
 use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::util::util::system_call;
 use libc::{c_char, c_int, c_short};
+use nix::ioctl_write_ptr;
 use std::fmt::{Debug, Formatter};
-use nix::{ioctl_write_ptr};
 
 pub const IFF_TAP: c_short = 0x0002;
 pub const IFF_NO_PI: c_short = 0x1000;
@@ -35,7 +35,7 @@ impl InterfaceRequest {
         } else {
             panic!("interface name too long");
         }
-        name[INTERFACE_NAME_SIZE-1] = 0;
+        name[INTERFACE_NAME_SIZE - 1] = 0;
 
         assert_eq!(name.len(), INTERFACE_NAME_SIZE);
         self.interface_name.clone_from_slice(&name);
@@ -62,7 +62,12 @@ impl Debug for InterfaceRequestUnion {
 
 const TUN_IOC_MAGIC: u8 = 'T' as u8;
 const TUN_IOC_SET_IFF: u8 = 202;
-ioctl_write_ptr!(tun_set_iff, TUN_IOC_MAGIC, TUN_IOC_SET_IFF, InterfaceRequest);
+ioctl_write_ptr!(
+    tun_set_iff,
+    TUN_IOC_MAGIC,
+    TUN_IOC_SET_IFF,
+    InterfaceRequest
+);
 
 // A FileDescriptor to a [Linux TUN/TAP](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) device
 #[derive(Debug)]
@@ -84,12 +89,7 @@ const CLONEDEV: &str = "/dev/net/tun\0";
 impl TunTapFD {
     #[allow(dead_code)]
     pub fn new(devname_: &String, is_tun_: bool) -> TunTapFD {
-        let t_ = unsafe {
-            libc::open(
-                CLONEDEV.as_ptr() as *const c_char,
-                libc::O_RDWR
-            )
-        };
+        let t_ = unsafe { libc::open(CLONEDEV.as_ptr() as *const c_char, libc::O_RDWR) };
 
         let fd_ = system_call("open", t_ as i32, 0);
         let fd_desc = FileDescriptor::new(fd_);
@@ -106,9 +106,13 @@ impl TunTapFD {
             //       size_of::<c_int>() or size_of::<c_ulong>() ?
             libc::ioctl(
                 fd_desc.fd_num(),
-                nix::request_code_write!(TUN_IOC_MAGIC, TUN_IOC_SET_IFF, std::mem::size_of::<c_int>()),
+                nix::request_code_write!(
+                    TUN_IOC_MAGIC,
+                    TUN_IOC_SET_IFF,
+                    std::mem::size_of::<c_int>()
+                ),
                 // req,
-                &mut ifr as *mut _
+                &mut ifr as *mut _,
             )
         };
         system_call("ioctl", ctl_ as i32, 0);
@@ -118,12 +122,7 @@ impl TunTapFD {
 
     #[allow(dead_code)]
     pub fn new2(devname_: &String, is_tun_: bool) -> TunTapFD {
-        let t_ = unsafe {
-            libc::open(
-                CLONEDEV.as_ptr() as *const c_char,
-                libc::O_RDWR
-            )
-        };
+        let t_ = unsafe { libc::open(CLONEDEV.as_ptr() as *const c_char, libc::O_RDWR) };
         let fd_ = system_call("open", t_ as i32, 0);
         let fd_desc = FileDescriptor::new(fd_);
 
@@ -150,8 +149,8 @@ impl TunTapFD {
 
         // https://stackoverflow.com/questions/41478901/how-to-use-nixs-ioctl
         match unsafe { tun_set_iff(fd_desc.fd_num(), req.as_mut()) } {
-        // match unsafe { tun_set_iff(fd_desc.fd_num(), &mut ifr as *mut _) } {
-        // match unsafe { tun_set_iff(fd_desc.fd_num(), req.as_ref()) } {
+            // match unsafe { tun_set_iff(fd_desc.fd_num(), &mut ifr as *mut _) } {
+            // match unsafe { tun_set_iff(fd_desc.fd_num(), req.as_ref()) } {
             Ok(ret) => println!("tun_set_iff succeeded with ret = {}", ret),
             Err(e) => println!("*** tun_set_iff failed with error: {}", e),
         }
