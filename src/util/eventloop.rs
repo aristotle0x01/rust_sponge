@@ -17,6 +17,9 @@ pub enum Result {
     Exit = 2,
 }
 
+// about why adding 'a will work
+// ref: https://gist.github.com/lotabout/60a0b393323357ba164b78ec7e93f1d1
+//      http://stackoverflow.com/questions/35651279/error-closure-may-outlive-the-current-function-but-it-will-not-outlive-it
 pub type CallbackT<'a> = Box<dyn FnMut() + 'a>;
 pub type InterestT<'a> = Box<dyn Fn() -> bool + 'a>;
 

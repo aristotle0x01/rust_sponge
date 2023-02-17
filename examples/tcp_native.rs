@@ -10,6 +10,9 @@ fn show_usage(argv0: &str) {
     error!("Usage: {} [-l] <host> <port>\n\n  -l specifies listen mode; <host>:<port> is the listening address.\n", argv0);
 }
 
+// cargo build --example tcp_native
+// target/debug/examples/tcp_native "127.0.0.1" "1234"
+// target/debug/examples/tcp_native "-l" "127.0.0.1" "1234"
 // cargo run --example tcp_native
 fn main() {
     let mut server_mode = false;

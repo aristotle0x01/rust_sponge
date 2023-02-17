@@ -12,6 +12,8 @@ pub fn bidirectional_stream_copy(socket: &mut dyn AsSocketMut) {
     let max_copy_length: SizeT = 65536;
     let buffer_size: SizeT = 1048576;
 
+    // Rc<RefCell<xxx>> way works here because it is used single-threaded-ly in this project
+    
     let socket_rc = Rc::new(RefCell::new(socket.as_file_descriptor().clone()));
     let input = Rc::new(RefCell::new(FileDescriptor::new(libc::STDIN_FILENO)));
     let output = Rc::new(RefCell::new(FileDescriptor::new(libc::STDOUT_FILENO)));
