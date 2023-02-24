@@ -128,11 +128,17 @@ impl TCPSender {
         let state = TCPState::state_summary_sender(&self);
         match state {
             TCPSenderStateSummary::CLOSED => {
-                let seg = Arc::new(Mutex::new(TCPSender::build_segment("", true, false, self.isn.clone())));
+                let seg = Arc::new(Mutex::new(TCPSender::build_segment(
+                    "",
+                    true,
+                    false,
+                    self.isn.clone(),
+                )));
                 self.segments_out.push_back(seg.clone());
                 self.outstanding.insert(self.next_abs_seq_no, seg.clone());
 
-                self.next_abs_seq_no = self.next_abs_seq_no + seg.lock().unwrap().length_in_sequence_space() as u64;
+                self.next_abs_seq_no =
+                    self.next_abs_seq_no + seg.lock().unwrap().length_in_sequence_space() as u64;
                 self.timer
                     .start(self.ms_total_tick, self.retransmission_timeout);
             }
@@ -157,8 +163,8 @@ impl TCPSender {
                     self.segments_out.push_back(seg.clone());
                     self.outstanding.insert(self.next_abs_seq_no, seg.clone());
 
-                    self.next_abs_seq_no =
-                        self.next_abs_seq_no + seg.lock().unwrap().length_in_sequence_space() as u64;
+                    self.next_abs_seq_no = self.next_abs_seq_no
+                        + seg.lock().unwrap().length_in_sequence_space() as u64;
                     self.timer
                         .start(self.ms_total_tick, self.retransmission_timeout);
                 }
@@ -176,8 +182,8 @@ impl TCPSender {
                     self.segments_out.push_back(seg.clone());
                     self.outstanding.insert(self.next_abs_seq_no, seg.clone());
 
-                    self.next_abs_seq_no =
-                        self.next_abs_seq_no + seg.lock().unwrap().length_in_sequence_space() as u64;
+                    self.next_abs_seq_no = self.next_abs_seq_no
+                        + seg.lock().unwrap().length_in_sequence_space() as u64;
                     self.timer
                         .start(self.ms_total_tick, self.retransmission_timeout);
                 }
