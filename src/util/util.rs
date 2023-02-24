@@ -1,3 +1,6 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
+
 pub fn system_call(attempt: &str, return_value: i32, errno_mask: i32) -> i32 {
     // let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
     let d = std::io::Error::last_os_error();
@@ -52,4 +55,20 @@ impl InternetChecksum {
             self.parity = !self.parity;
         }
     }
+}
+
+// the number of milliseconds since the program started
+static mut PROGRAM_START: Option<Instant> = None;
+static mut PROGRAM_STARTED: AtomicBool = AtomicBool::new(false);
+pub fn timestamp_ms() -> u64 {
+    let duration = unsafe {
+        if !PROGRAM_STARTED.load(Ordering::SeqCst) && PROGRAM_START.is_none() {
+            PROGRAM_STARTED.store(true, Ordering::SeqCst);
+            PROGRAM_START = Some(Instant::now());
+        }
+
+        PROGRAM_START.unwrap().elapsed()
+    };
+
+    duration.as_millis() as u64
 }

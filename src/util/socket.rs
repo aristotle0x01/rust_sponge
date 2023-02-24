@@ -144,8 +144,8 @@ pub trait AsSocketMut: AsFileDescriptorMut {
 
 #[derive(Debug)]
 pub struct ReceivedDatagram {
-    source_address: sockaddr,
-    payload: Vec<u8>,
+    pub source_address: sockaddr,
+    pub payload: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -240,7 +240,7 @@ impl UDPSocket {
     }
 
     #[allow(dead_code)]
-    pub fn sendto(&mut self, _destination: &mut sockaddr, _payload: &mut Vec<u8>) {
+    pub fn sendto2(&mut self, _destination: &mut sockaddr, _payload: &mut Vec<u8>) {
         let vecs = [libc::iovec {
             iov_base: _payload.as_mut_ptr() as *mut c_void,
             iov_len: _payload.len(),
@@ -248,6 +248,35 @@ impl UDPSocket {
         let msg = libc::msghdr {
             msg_name: _destination as *mut _ as *mut c_void,
             msg_namelen: size_of_val(_destination) as socklen_t,
+            msg_iov: vecs.as_ptr() as *mut libc::iovec,
+            msg_iovlen: (vecs.len() as c_int) as usize,
+            msg_control: null_mut(),
+            msg_controllen: 0,
+            msg_flags: 0,
+        };
+
+        let sent = unsafe { libc::sendmsg(self.fd_num(), &msg, 0) };
+        system_call("sendmsg", sent as i32, 0);
+        assert_eq!(
+            sent,
+            _payload.len() as isize,
+            "datagram payload too big for sendmsg()"
+        );
+
+        self.register_write();
+    }
+
+    #[allow(dead_code)]
+    pub fn sendto(&mut self, _destination: &SocketAddrV4, _payload: &mut Vec<u8>) {
+        let mut sin = SockaddrIn::from(*_destination);
+
+        let vecs = [libc::iovec {
+            iov_base: _payload.as_mut_ptr() as *mut c_void,
+            iov_len: _payload.len(),
+        }; 1];
+        let msg = libc::msghdr {
+            msg_name: &mut sin as *mut _ as *mut c_void,
+            msg_namelen: size_of_val(&sin) as socklen_t,
             msg_iov: vecs.as_ptr() as *mut libc::iovec,
             msg_iovlen: (vecs.len() as c_int) as usize,
             msg_control: null_mut(),

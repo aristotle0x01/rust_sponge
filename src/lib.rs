@@ -12,7 +12,11 @@
 
 // macros used internally
 
+use crate::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
+use crate::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
+
 pub type SizeT = usize;
+pub type LossyTCPOverUDPSocketAdapter = LossyFdAdapter<TCPOverUDPSocketAdapter>;
 
 pub mod byte_stream;
 pub mod stream_reassembler;

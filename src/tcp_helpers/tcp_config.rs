@@ -1,6 +1,9 @@
 use crate::wrapping_integers::WrappingInt32;
 use crate::SizeT;
+use libc::{sockaddr, socklen_t};
+use nix::sys::socket::{SockaddrIn, SockaddrLike};
 use std::fmt;
+use std::mem::size_of_val;
 use std::net::SocketAddrV4;
 
 #[derive(Debug, Copy, Clone)]
@@ -50,4 +53,25 @@ pub struct FdAdapterConfig {
     pub destination: SocketAddrV4,
     pub loss_rate_dn: u16,
     pub loss_rate_up: u16,
+}
+impl FdAdapterConfig {
+    #[allow(dead_code)]
+    pub fn from_sockaddr(sd: &sockaddr) -> SocketAddrV4 {
+        unsafe {
+            SocketAddrV4::from(
+                SockaddrIn::from_raw(sd, Option::from(size_of_val(sd) as socklen_t)).unwrap(),
+            )
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn eq_to_sockaddr(sd: &sockaddr, s4: &SocketAddrV4) -> bool {
+        let t = unsafe {
+            SocketAddrV4::from(
+                SockaddrIn::from_raw(sd, Option::from(size_of_val(sd) as socklen_t)).unwrap(),
+            )
+        };
+
+        s4.eq(&t)
+    }
 }
