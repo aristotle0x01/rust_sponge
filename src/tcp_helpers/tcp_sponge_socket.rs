@@ -11,11 +11,14 @@
 // use std::cmp::min;
 // use std::fmt::Debug;
 // use std::sync::{Arc, Mutex};
-// use std::sync::atomic::{AtomicBool, Ordering};
 // use std::thread;
 // use std::thread::JoinHandle;
 // use crate::util::aeventloop::AEventLoop;
 // use crate::util::eventloop::Result::Exit;
+//
+// // Mutate from multiple threads without interior mutability?
+// //      let file = Arc::new(Mutex::new(File::create("foo.txt").unwrap()));
+// // https://users.rust-lang.org/t/mutate-from-multiple-threads-without-interior-mutability/68896
 //
 // #[derive(Debug)]
 // pub struct TCPSpongeSocket<'a, AdapterT> {

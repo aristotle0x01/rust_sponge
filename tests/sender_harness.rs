@@ -6,12 +6,12 @@ use rust_sponge::wrapping_integers::WrappingInt32;
 use rust_sponge::SizeT;
 use std::cmp::min;
 use std::collections::VecDeque;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 pub const DEFAULT_TEST_WINDOW: u32 = 137;
 
 pub trait SenderTestStep {
-    fn execute(&self, sender: &mut TCPSender, segments: &mut VecDeque<Rc<TCPSegment>>);
+    fn execute(&self, sender: &mut TCPSender, segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>);
 }
 
 pub trait SenderExpectation: SenderTestStep {
@@ -25,7 +25,7 @@ pub struct ExpectState {
     state: String,
 }
 impl SenderTestStep for ExpectState {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderExpectation::to_string(self));
 
         let b = TCPState::state_summary_sender(sender) == self.state;
@@ -53,7 +53,7 @@ pub struct ExpectSeqno {
     seqno: WrappingInt32,
 }
 impl SenderTestStep for ExpectSeqno {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderExpectation::to_string(self));
 
         let b = sender.next_seqno() == self.seqno;
@@ -81,7 +81,7 @@ pub struct ExpectBytesInFlight {
     n_bytes: SizeT,
 }
 impl SenderTestStep for ExpectBytesInFlight {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderExpectation::to_string(self));
 
         let b = sender.bytes_in_flight() == self.n_bytes;
@@ -107,11 +107,11 @@ impl ExpectBytesInFlight {
 
 pub struct ExpectNoSegment {}
 impl SenderTestStep for ExpectNoSegment {
-    fn execute(&self, _sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, _sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderExpectation::to_string(self));
 
         if !_segments.is_empty() {
-            let seg = _segments.back().unwrap();
+            let seg = _segments.back().unwrap().lock().unwrap();
             let s = format!("The TCPSender sent a segment, but should not have. Segment info:\n\t{} with {} bytes", seg.header().summary(), seg.payload().size());
             assert!(false, "{}", s);
         }
@@ -135,7 +135,7 @@ pub struct WriteBytes {
     end_input: bool,
 }
 impl SenderTestStep for WriteBytes {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderAction::to_string(self));
 
         sender.stream_in_mut().write(&self.bytes);
@@ -180,7 +180,7 @@ pub struct Tick {
     max_retx_exceeded: Option<bool>,
 }
 impl SenderTestStep for Tick {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderAction::to_string(self));
 
         sender.tick(self.ms);
@@ -237,7 +237,7 @@ pub struct AckReceived {
     window_advertisement: Option<u16>,
 }
 impl SenderTestStep for AckReceived {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderAction::to_string(self));
 
         sender.ack_received(
@@ -276,7 +276,7 @@ impl AckReceived {
 
 pub struct Close {}
 impl SenderTestStep for Close {
-    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderAction::to_string(self));
 
         sender.stream_in_mut().end_input();
@@ -301,11 +301,12 @@ pub struct ExpectSegment {
     data: Option<String>,
 }
 impl SenderTestStep for ExpectSegment {
-    fn execute(&self, _sender: &mut TCPSender, _segments: &mut VecDeque<Rc<TCPSegment>>) {
+    fn execute(&self, _sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderExpectation::to_string(self));
 
         assert!(!_segments.is_empty(), "existed");
-        let seg = _segments.pop_front().unwrap();
+        let t_ = _segments.pop_front().unwrap();
+        let seg = t_.lock().unwrap();
         if self.ack.is_some() && seg.header().ack != self.ack.unwrap() {
             let f = self.violated_field(
                 "ack",
@@ -546,7 +547,7 @@ impl ExpectSegment {
 
 pub struct TCPSenderTestHarness {
     sender: TCPSender,
-    outbound_segments: VecDeque<Rc<TCPSegment>>,
+    outbound_segments: VecDeque<Arc<Mutex<TCPSegment>>>,
     name: String,
 }
 impl TCPSenderTestHarness {

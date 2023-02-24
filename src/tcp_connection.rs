@@ -6,14 +6,14 @@ use crate::tcp_receiver::TCPReceiver;
 use crate::tcp_sender::TCPSender;
 use crate::SizeT;
 use std::collections::VecDeque;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct TCPConnection {
     cfg: TCPConfig,
     receiver: TCPReceiver,
     sender: TCPSender,
-    segments_out: VecDeque<Rc<TCPSegment>>,
+    segments_out: VecDeque<Arc<Mutex<TCPSegment>>>,
     linger_after_streams_finish: bool,
     total_tick: SizeT,
     last_recv_seg_tick: SizeT,
@@ -57,10 +57,9 @@ impl TCPConnection {
         self.sender.fill_window();
 
         while !self.sender.segments_out_mut().is_empty() {
-            let mut seg = self.sender.segments_out_mut().front_mut().unwrap();
+            let seg = self.sender.segments_out_mut().pop_front().unwrap();
+            let mut mut_seg = seg.lock().unwrap();
             if self.receiver.ackno().is_some() {
-                let mut_seg = Rc::make_mut(&mut seg);
-
                 mut_seg.header_mut().ack = true;
                 mut_seg.header_mut().ackno = self.receiver.ackno().unwrap();
                 if self.receiver.window_size() >= u16::MAX as SizeT {
@@ -70,10 +69,9 @@ impl TCPConnection {
                 }
             }
             self.segments_out.push_back(seg.clone());
-            if seg.header().fin {
+            if mut_seg.header().fin {
                 self.fin_sent = true;
             }
-            self.sender.segments_out_mut().pop_front();
         }
 
         self.check_active();
@@ -199,7 +197,7 @@ impl TCPConnection {
     }
 
     #[allow(dead_code)]
-    pub fn segments_out_mut(&mut self) -> &mut VecDeque<Rc<TCPSegment>> {
+    pub fn segments_out_mut(&mut self) -> &mut VecDeque<Arc<Mutex<TCPSegment>>> {
         &mut self.segments_out
     }
 
@@ -211,8 +209,11 @@ impl TCPConnection {
     #[allow(dead_code)]
     fn send_reset(&mut self) {
         self.sender.send_empty_segment();
-        let mut seg = self.sender.segments_out_mut().back_mut().unwrap();
-        Rc::make_mut(&mut seg).header_mut().rst = true;
+        let seg = self.sender.segments_out_mut().back_mut().unwrap();
+        let mut mut_seg = seg.lock().unwrap();
+        mut_seg.header_mut().rst = true;
+        drop(mut_seg);
+
         self.write(&String::new());
 
         self.sender.stream_in_mut().set_error();

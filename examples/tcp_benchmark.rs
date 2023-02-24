@@ -5,7 +5,8 @@ use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::SizeT;
 use std::cmp::min;
-use std::rc::Rc;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 // todo: has not met the minimal performance requirement yet
@@ -88,7 +89,7 @@ fn main_loop(reorder: bool) {
 }
 
 fn move_segments(x: &mut TCPConnection, y: &mut TCPConnection, reorder: bool) {
-    let mut segments: Vec<Rc<TCPSegment>> = Vec::new();
+    let mut segments: Vec<Arc<Mutex<TCPSegment>>> = Vec::new();
 
     while !x.segments_out_mut().is_empty() {
         segments.push(x.segments_out_mut().pop_front().unwrap());
@@ -96,11 +97,13 @@ fn move_segments(x: &mut TCPConnection, y: &mut TCPConnection, reorder: bool) {
 
     if reorder {
         for s in segments.iter_mut().rev() {
-            y.segment_received(s.as_ref());
+            let t_ = s.lock().unwrap();
+            y.segment_received(t_.deref());
         }
     } else {
         for s in segments {
-            y.segment_received(s.as_ref());
+            let t_ = s.lock().unwrap();
+            y.segment_received(t_.deref());
         }
     }
 }

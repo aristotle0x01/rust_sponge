@@ -1,4 +1,3 @@
-use log::error;
 use rust_sponge::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
 use rust_sponge::util::socket::{AsSocket, AsSocketMut, TCPSocket, UDPSocket};

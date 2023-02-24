@@ -1,9 +1,8 @@
 use crate::util::util::system_call;
 use crate::SizeT;
-use std::cell::RefCell;
 use std::cmp::min;
 use std::ffi::c_void;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 struct FDWrapper {
@@ -46,13 +45,13 @@ impl Drop for FDWrapper {
 #[derive(Debug)]
 pub struct FileDescriptor {
     // https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch15-05-interior-mutability.html#having-multiple-owners-of-mutable-data-by-combining-rct-and-refcellt
-    internal_fd: Rc<RefCell<FDWrapper>>,
+    internal_fd: Arc<Mutex<FDWrapper>>,
 }
 impl FileDescriptor {
     #[allow(dead_code)]
     pub fn new(_fd: i32) -> FileDescriptor {
         FileDescriptor {
-            internal_fd: Rc::new(RefCell::new(FDWrapper {
+            internal_fd: Arc::new(Mutex::new(FDWrapper {
                 fd: _fd,
                 eof: false,
                 closed: false,
@@ -64,12 +63,14 @@ impl FileDescriptor {
 
     #[allow(dead_code)]
     pub fn register_read(&mut self) {
-        self.internal_fd.borrow_mut().read_count += 1;
+        let mut fd_ = self.internal_fd.lock().unwrap();
+        fd_.read_count += 1;
     }
 
     #[allow(dead_code)]
     pub fn register_write(&mut self) {
-        self.internal_fd.borrow_mut().write_count += 1;
+        let mut fd_ = self.internal_fd.lock().unwrap();
+        fd_.write_count += 1;
     }
 
     #[allow(dead_code)]
@@ -100,7 +101,8 @@ impl FileDescriptor {
         }
 
         if _limit > 0 && bytes_read == 0 {
-            self.internal_fd.borrow_mut().eof = true;
+            let mut fd_ = self.internal_fd.lock().unwrap();
+            fd_.eof = true;
         }
         if bytes_read > size_to_read as isize {
             panic!("read() read more than requested");
@@ -146,7 +148,8 @@ impl FileDescriptor {
 
     #[allow(dead_code)]
     pub fn close(&mut self) {
-        self.internal_fd.borrow_mut().close();
+        let mut fd_ = self.internal_fd.lock().unwrap();
+        fd_.close();
     }
 
     #[allow(dead_code)]
@@ -165,27 +168,30 @@ impl FileDescriptor {
 
     #[allow(dead_code)]
     pub fn fd_num(&self) -> i32 {
-        self.internal_fd.borrow().fd
+        let fd_ = self.internal_fd.lock().unwrap();
+        fd_.fd
     }
 
     #[allow(dead_code)]
     pub fn eof(&self) -> bool {
-        self.internal_fd.borrow().eof
+        let fd_ = self.internal_fd.lock().unwrap();
+        fd_.eof
     }
 
     #[allow(dead_code)]
     pub fn closed(&self) -> bool {
-        self.internal_fd.borrow().closed
+        let fd_ = self.internal_fd.lock().unwrap();
+        fd_.closed
     }
 
     #[allow(dead_code)]
     pub fn read_count(&self) -> u32 {
-        self.internal_fd.borrow().read_count
+        self.internal_fd.lock().unwrap().read_count
     }
 
     #[allow(dead_code)]
     pub fn write_count(&self) -> u32 {
-        self.internal_fd.borrow().write_count
+        self.internal_fd.lock().unwrap().write_count
     }
 }
 impl Clone for FileDescriptor {
