@@ -147,7 +147,6 @@ where
             Direction::In,
             Box::new(move || {
                 let mut l = tcp_.lock().unwrap();
-                // let seg = <AdapterT as AsFdAdapterBaseMut>::read(&mut adapter_.lock().unwrap());
                 let seg = adapter_.lock().unwrap().read_adp();
                 if seg.is_some() {
                     l.as_mut().unwrap().segment_received(&seg.unwrap());
@@ -283,10 +282,6 @@ where
                 while !l.as_mut().unwrap().segments_out_mut().is_empty() {
                     let t_ = l.as_mut().unwrap().segments_out_mut().pop_front().unwrap();
                     let mut t_seg = t_.lock().unwrap();
-                    // <AdapterT as AsFdAdapterBaseMut>::write(
-                    //     &mut adapter_.lock().unwrap(),
-                    //     t_seg.deref_mut()
-                    // );
                     adapter_.lock().unwrap().write_adp(t_seg.deref_mut());
                 }
             }),
@@ -404,7 +399,6 @@ where
             tcp_1,
             adapter_,
         );
-
         eprintln!(
             "New connection from {}.",
             self.datagram_adapter
