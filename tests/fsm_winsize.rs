@@ -2,10 +2,9 @@ use crate::tcp_fsm_test_harness::*;
 use rand::{thread_rng, Rng};
 use rust_sponge::tcp_helpers::tcp_config::TCPConfig;
 use rust_sponge::tcp_helpers::tcp_state::State::{ESTABLISHED, LISTEN};
-use rust_sponge::tcp_helpers::tcp_state::{State, TCPState};
+use rust_sponge::tcp_helpers::tcp_state::TCPState;
 use rust_sponge::wrapping_integers::WrappingInt32;
 use rust_sponge::SizeT;
-use std::cmp::{max, min};
 
 mod tcp_fsm_test_harness;
 

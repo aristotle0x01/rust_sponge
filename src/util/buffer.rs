@@ -1,6 +1,6 @@
 use crate::SizeT;
 use std::collections::VecDeque;
-use std::rc::Rc;
+use std::sync::Arc;
 
 // semantics of c++ std::move() std::string &str
 // https://stackoverflow.com/questions/3413470/what-is-stdmove-and-when-should-it-be-used
@@ -11,10 +11,12 @@ use std::rc::Rc;
 
 // What is the difference between [u8] and Vec<u8> on rust?
 // https://stackoverflow.com/questions/71377731/what-is-the-difference-between-u8-and-vecu8-on-rust
+
+// Returning a mutable reference to a value behind Arc and Mutex
+// https://stackoverflow.com/questions/66726259/returning-a-mutable-reference-to-a-value-behind-arc-and-mutex
 #[derive(Debug)]
 pub struct Buffer {
-    // RefCell considered, but hard to return &[u8] for fn str()
-    storage: Rc<Vec<u8>>,
+    storage: Vec<u8>,
     starting_offset: SizeT,
 }
 impl Buffer {
@@ -23,7 +25,7 @@ impl Buffer {
     #[allow(dead_code)]
     pub fn new(_bytes: Vec<u8>) -> Buffer {
         Buffer {
-            storage: Rc::new(_bytes),
+            storage: _bytes,
             starting_offset: 0,
         }
     }
@@ -61,13 +63,9 @@ impl Buffer {
             panic!("Buffer::remove_prefix");
         }
         self.starting_offset += n;
-        if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
-            // the RefCell borrow_mut way
-            // *self.storage.borrow_mut() = Vec::new();
-            // assert_eq!(self.storage.borrow().len(), 0);
 
-            // https://doc.rust-lang.org/std/rc/struct.Rc.html#method.make_mut
-            *Rc::make_mut(&mut self.storage) = vec![];
+        if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
+            self.storage.clear();
             assert!(self.storage.is_empty());
         }
     }
@@ -83,7 +81,7 @@ impl Clone for Buffer {
 impl From<String> for Buffer {
     fn from(s: String) -> Self {
         Buffer {
-            storage: Rc::new(Vec::from(s)),
+            storage: Vec::from(s),
             starting_offset: 0,
         }
     }
@@ -91,13 +89,13 @@ impl From<String> for Buffer {
 
 #[derive(Debug)]
 pub struct BufferList {
-    buffers: VecDeque<Rc<Buffer>>,
+    buffers: VecDeque<Arc<Buffer>>,
 }
 impl BufferList {
     #[allow(dead_code)]
     pub fn new(_buffer: Buffer) -> BufferList {
-        let mut t: VecDeque<Rc<Buffer>> = VecDeque::new();
-        t.push_back(Rc::new(_buffer));
+        let mut t: VecDeque<Arc<Buffer>> = VecDeque::new();
+        t.push_back(Arc::new(_buffer));
         BufferList { buffers: t }
     }
 
@@ -110,14 +108,14 @@ impl BufferList {
 
     #[allow(dead_code)]
     pub fn new_from_str(s: String) -> BufferList {
-        let buffer = Rc::new(Buffer::new(s.as_bytes().to_vec()));
-        let mut t: VecDeque<Rc<Buffer>> = VecDeque::new();
+        let buffer = Arc::new(Buffer::new(s.as_bytes().to_vec()));
+        let mut t: VecDeque<Arc<Buffer>> = VecDeque::new();
         t.push_back(buffer);
         BufferList { buffers: t }
     }
 
     #[allow(dead_code)]
-    pub fn buffers(&self) -> &VecDeque<Rc<Buffer>> {
+    pub fn buffers(&self) -> &VecDeque<Arc<Buffer>> {
         &self.buffers
     }
 
@@ -136,7 +134,7 @@ impl BufferList {
 
             if n < self.buffers.front().unwrap().str().len() {
                 let mut buf = self.buffers.pop_front().unwrap();
-                Rc::make_mut(&mut buf).remove_prefix(n);
+                Arc::make_mut(&mut buf).remove_prefix(n);
                 self.buffers.push_front(buf);
                 n = 0;
             } else {

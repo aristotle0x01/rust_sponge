@@ -1,20 +1,23 @@
 use crate::util::eventloop::Direction::In;
-use crate::util::eventloop::{CallbackT, Direction, InterestT, Result};
+use crate::util::eventloop::{Direction, Result};
 use crate::util::file_descriptor::FileDescriptor;
 use libc::{c_short, nfds_t};
 use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Mutex};
 
+pub type ACallbackT = Box<dyn FnMut() + Send>;
+pub type AInterestT = Box<dyn Fn() -> bool + Send>;
+
 #[allow(dead_code)]
-pub struct ARule<'a> {
+pub struct ARule {
     fd: Arc<Mutex<FileDescriptor>>,
     direction: Direction,
-    callback: CallbackT<'a>,
-    interest: InterestT<'a>,
-    cancel: CallbackT<'a>,
+    callback: ACallbackT,
+    interest: AInterestT,
+    cancel: ACallbackT,
     remove: bool,
 }
-impl Debug for ARule<'_> {
+impl Debug for ARule {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let fd_ = self.fd.lock().unwrap();
         write!(
@@ -29,7 +32,7 @@ impl Debug for ARule<'_> {
         )
     }
 }
-impl ARule<'_> {
+impl ARule {
     #[allow(dead_code)]
     pub fn service_count(&self) -> u32 {
         let fd_ = self.fd.lock().unwrap();
@@ -42,12 +45,12 @@ impl ARule<'_> {
 }
 
 #[derive(Debug)]
-pub struct AEventLoop<'a> {
-    rules: Vec<ARule<'a>>,
+pub struct AEventLoop {
+    rules: Vec<ARule>,
 }
-impl<'a> AEventLoop<'a> {
+impl AEventLoop {
     #[allow(dead_code)]
-    pub fn new() -> AEventLoop<'static> {
+    pub fn new() -> AEventLoop {
         AEventLoop { rules: Vec::new() }
     }
 
@@ -56,9 +59,9 @@ impl<'a> AEventLoop<'a> {
         &mut self,
         _fd: Arc<Mutex<FileDescriptor>>,
         _direction: Direction,
-        _callback: CallbackT<'a>,
-        _interest: InterestT<'a>,
-        _cancel: CallbackT<'a>,
+        _callback: ACallbackT,
+        _interest: AInterestT,
+        _cancel: ACallbackT,
     ) {
         self.rules.push(ARule {
             fd: _fd,

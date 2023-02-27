@@ -42,7 +42,7 @@ where
 
     #[allow(dead_code)]
     pub fn read(&mut self) -> Option<TCPSegment> {
-        let ret = <AdapterT as AsFdAdapterBaseMut>::read(&mut self.adapter);
+        let ret = <AdapterT as AsFdAdapterBaseMut>::read_adp(&mut self.adapter);
         if self.should_drop(false) {
             return None;
         }
@@ -57,7 +57,7 @@ where
         }
 
         // https://doc.rust-lang.org/beta/rust-by-example/trait/disambiguating.html
-        <AdapterT as AsFdAdapterBaseMut>::write(&mut self.adapter, seg);
+        <AdapterT as AsFdAdapterBaseMut>::write_adp(&mut self.adapter, seg);
     }
 
     #[allow(dead_code)]

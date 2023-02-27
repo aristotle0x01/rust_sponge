@@ -1,9 +1,6 @@
 use crate::tcp_fsm_test_harness::*;
-use rand::Rng;
 use rust_sponge::tcp_helpers::tcp_config::TCPConfig;
-use rust_sponge::tcp_helpers::tcp_state::State::{
-    CloseWait, LastAck, CLOSED, ESTABLISHED, LISTEN, RESET,
-};
+use rust_sponge::tcp_helpers::tcp_state::State::{LISTEN, RESET};
 use rust_sponge::tcp_helpers::tcp_state::{State, TCPState};
 use rust_sponge::wrapping_integers::WrappingInt32;
 use rust_sponge::SizeT;

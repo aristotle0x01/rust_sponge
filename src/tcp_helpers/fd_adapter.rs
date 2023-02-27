@@ -84,9 +84,9 @@ pub trait AsFdAdapterBaseMut: AsFdAdapterBase {
         self.as_fd_adapter_base_mut().tick(_t);
     }
 
-    fn read(&mut self) -> Option<TCPSegment>;
+    fn read_adp(&mut self) -> Option<TCPSegment>;
 
-    fn write(&mut self, seg: &mut TCPSegment);
+    fn write_adp(&mut self, seg: &mut TCPSegment);
 }
 
 #[derive(Debug)]
@@ -104,7 +104,7 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
         &mut self.fd_adapter_base
     }
 
-    fn read(&mut self) -> Option<TCPSegment> {
+    fn read_adp(&mut self) -> Option<TCPSegment> {
         let datagram = self.sock.recv(65536);
 
         let b =
@@ -132,7 +132,7 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
         Some(seg)
     }
 
-    fn write(&mut self, seg: &mut TCPSegment) {
+    fn write_adp(&mut self, seg: &mut TCPSegment) {
         seg.header_mut().sport = self.config().source.port();
         seg.header_mut().dport = self.config().destination.port();
         self.sock.sendto(
