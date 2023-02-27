@@ -1,7 +1,7 @@
-use crate::tcp_helpers::fd_adapter::AsFdAdapterBaseMut;
+use crate::tcp_helpers::fd_adapter::{AsFdAdapterBase, AsFdAdapterBaseMut, FdAdapterBase};
 use crate::tcp_helpers::tcp_config::FdAdapterConfig;
 use crate::tcp_helpers::tcp_segment::TCPSegment;
-use crate::util::file_descriptor::{AsFileDescriptorMut, FileDescriptor};
+use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::SizeT;
 use rand::rngs::ThreadRng;
 use rand::Rng;
@@ -9,18 +9,54 @@ use rand::Rng;
 #[derive(Debug)]
 pub struct LossyFdAdapter<AdapterT> {
     adapter: AdapterT,
-    rand: ThreadRng,
+}
+impl<AdapterT> AsFileDescriptor for LossyFdAdapter<AdapterT>
+where
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+{
+    fn as_file_descriptor(&self) -> &FileDescriptor {
+        self.adapter.as_file_descriptor()
+    }
+}
+impl<AdapterT> AsFileDescriptorMut for LossyFdAdapter<AdapterT>
+where
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+{
+    fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
+        self.adapter.as_file_descriptor_mut()
+    }
+}
+impl<AdapterT> AsFdAdapterBase for LossyFdAdapter<AdapterT>
+where
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+{
+    fn as_fd_adapter_base(&self) -> &FdAdapterBase {
+        self.adapter.as_fd_adapter_base()
+    }
+}
+impl<AdapterT> AsFdAdapterBaseMut for LossyFdAdapter<AdapterT>
+where
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+{
+    fn as_fd_adapter_base_mut(&mut self) -> &mut FdAdapterBase {
+        self.adapter.as_fd_adapter_base_mut()
+    }
+
+    fn read_adp(&mut self) -> Option<TCPSegment> {
+        self.adapter.read_adp()
+    }
+
+    fn write_adp(&mut self, seg: &mut TCPSegment) {
+        self.adapter.write_adp(seg);
+    }
 }
 impl<AdapterT> LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
 {
     #[allow(dead_code)]
     pub fn new(_adapter: AdapterT) -> LossyFdAdapter<AdapterT> {
-        LossyFdAdapter {
-            adapter: _adapter,
-            rand: Default::default(),
-        }
+        LossyFdAdapter { adapter: _adapter }
     }
 
     #[allow(dead_code)]
@@ -32,7 +68,8 @@ where
             cfg.loss_rate_dn
         };
 
-        return loss != 0 && self.rand.gen_range(0..=u16::MAX) < loss;
+        let mut rand = ThreadRng::default();
+        return loss != 0 && rand.gen_range(0..=u16::MAX) < loss;
     }
 
     #[allow(dead_code)]

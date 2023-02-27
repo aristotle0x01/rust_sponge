@@ -14,9 +14,11 @@
 
 use crate::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use crate::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
+use crate::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
 
 pub type SizeT = usize;
 pub type LossyTCPOverUDPSocketAdapter = LossyFdAdapter<TCPOverUDPSocketAdapter>;
+pub type LossyTCPOverUDPSpongeSocket = TCPSpongeSocket<LossyTCPOverUDPSocketAdapter>;
 
 pub mod byte_stream;
 pub mod stream_reassembler;

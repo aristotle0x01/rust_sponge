@@ -299,35 +299,6 @@ where
     }
 
     #[allow(dead_code)]
-    fn tcp_loop(&mut self, condition: AInterestT) {
-        let mut base_time = timestamp_ms();
-
-        while condition() {
-            let ret = self
-                .event_loop
-                .lock()
-                .unwrap()
-                .wait_next_event(TCPSpongeSocket::<AdapterT>::TCP_TICK_MS as i32);
-            if ret == Exit || self.abort.load(Ordering::SeqCst) {
-                break;
-            }
-
-            let mut tcp_ = self.tcp.lock().unwrap();
-            if tcp_.as_ref().unwrap().active() {
-                let next_time = timestamp_ms();
-                tcp_.as_mut()
-                    .unwrap()
-                    .tick((next_time - base_time) as SizeT);
-                self.datagram_adapter
-                    .lock()
-                    .unwrap()
-                    .tick((next_time - base_time) as SizeT);
-                base_time = next_time;
-            }
-        }
-    }
-
-    #[allow(dead_code)]
     pub fn wait_until_closed(&mut self) {
         self.main_thread_data.lock().unwrap().shutdown(SHUT_RDWR);
         eprintln!("DEBUG: Waiting for clean shutdown... ");
@@ -363,10 +334,20 @@ where
             )
         );
 
-        let clone0 = self.tcp.clone();
-        self.tcp_loop(Box::new(move || {
-            clone0.lock().unwrap().as_ref().unwrap().state() == TCPState::from(State::SynSent)
-        }));
+        let tcp_ = self.tcp.clone();
+        let tcp_1 = self.tcp.clone();
+        let event_loop_ = self.event_loop.clone();
+        let abort_ = self.abort.clone();
+        let adapter_ = self.datagram_adapter.clone();
+        tcp_loop(
+            Box::new(move || {
+                tcp_.lock().unwrap().as_ref().unwrap().state() == TCPState::from(State::SynSent)
+            }),
+            event_loop_,
+            abort_,
+            tcp_1,
+            adapter_,
+        );
         eprintln!(
             "Successfully connected to {}.",
             c_ad.destination.to_string()
@@ -388,97 +369,6 @@ where
                         abort_,
                         datagram_adapter_,
                     )
-                }))
-                .unwrap(),
-        );
-    }
-
-    #[allow(dead_code)]
-    pub fn connect2(&mut self, c_tcp: &TCPConfig, c_ad: FdAdapterConfig) {
-        assert!(
-            self.tcp.lock().unwrap().is_none(),
-            "connect() with TCPConnection already initialized"
-        );
-
-        self.initialize_tcp(c_tcp);
-
-        self.datagram_adapter.lock().unwrap().set_config(c_ad);
-
-        eprintln!("DEBUG: Connecting to {}...", c_ad.destination.to_string());
-        self.tcp.lock().unwrap().as_mut().unwrap().connect();
-
-        let expected_state = TCPState::from(State::SynSent);
-        assert_eq!(
-            self.tcp.lock().unwrap().as_ref().unwrap().state(),
-            expected_state,
-            "{}",
-            format!(
-                "After TCPConnection::connect(), state was {} but expected {}",
-                self.tcp.lock().unwrap().as_ref().unwrap().state().name(),
-                expected_state.name()
-            )
-        );
-
-        let clone0 = self.tcp.clone();
-        self.tcp_loop(Box::new(move || {
-            clone0.lock().unwrap().as_ref().unwrap().state() == TCPState::from(State::SynSent)
-        }));
-        eprintln!(
-            "Successfully connected to {}.",
-            c_ad.destination.to_string()
-        );
-
-        let tcp_ = self.tcp.clone();
-        let main_thread_data_ = self.main_thread_data.clone();
-        let event_loop_ = self.event_loop.clone();
-        let abort_ = self.abort.clone();
-        let datagram_adapter_ = self.datagram_adapter.clone();
-        let _ = self.tcp_thread.insert(
-            thread::Builder::new()
-                .name("thread1".to_string())
-                .spawn(Box::new(move || {
-                    let mut l = tcp_.lock().unwrap();
-                    assert!(l.as_ref().is_some(), "no TCP");
-                    {
-                        let mut base_time = timestamp_ms();
-                        loop {
-                            let ret = event_loop_
-                                .lock()
-                                .unwrap()
-                                .wait_next_event(TCPSpongeSocket::<AdapterT>::TCP_TICK_MS as i32);
-                            if ret == Exit || abort_.load(Ordering::SeqCst) {
-                                break;
-                            }
-
-                            if l.as_ref().unwrap().active() {
-                                let next_time = timestamp_ms();
-                                l.as_mut().unwrap().tick((next_time - base_time) as SizeT);
-                                datagram_adapter_
-                                    .lock()
-                                    .unwrap()
-                                    .tick((next_time - base_time) as SizeT);
-                                base_time = next_time;
-                            }
-                        }
-                    }
-
-                    main_thread_data_
-                        .clone()
-                        .lock()
-                        .unwrap()
-                        .shutdown(SHUT_RDWR);
-
-                    if !l.as_ref().unwrap().active() {
-                        eprintln!(
-                            "DEBUG: TCP connection finished {}",
-                            if l.as_ref().unwrap().state() == TCPState::from(State::RESET) {
-                                "uncleanly"
-                            } else {
-                                "cleanly."
-                            }
-                        );
-                    }
-                    l.take();
                 }))
                 .unwrap(),
         );
@@ -497,13 +387,24 @@ where
         self.datagram_adapter.lock().unwrap().set_listening(true);
 
         eprintln!("DEBUG: Listening for incoming connection...");
-        let clone0 = self.tcp.clone();
-        self.tcp_loop(Box::new(move || {
-            let s = clone0.lock().unwrap().as_ref().unwrap().state();
-            s == TCPState::from(State::LISTEN)
-                || s == TCPState::from(State::SynRcvd)
-                || s == TCPState::from(State::SynSent)
-        }));
+        let tcp_ = self.tcp.clone();
+        let tcp_1 = self.tcp.clone();
+        let event_loop_ = self.event_loop.clone();
+        let abort_ = self.abort.clone();
+        let adapter_ = self.datagram_adapter.clone();
+        tcp_loop(
+            Box::new(move || {
+                let s = tcp_.lock().unwrap().as_ref().unwrap().state();
+                s == TCPState::from(State::LISTEN)
+                    || s == TCPState::from(State::SynRcvd)
+                    || s == TCPState::from(State::SynSent)
+            }),
+            event_loop_,
+            abort_,
+            tcp_1,
+            adapter_,
+        );
+
         eprintln!(
             "New connection from {}.",
             self.datagram_adapter
@@ -530,92 +431,6 @@ where
                         abort_,
                         datagram_adapter_,
                     )
-                })
-                .unwrap(),
-        );
-    }
-
-    #[allow(dead_code)]
-    pub fn listen_and_accept2(&mut self, c_tcp: &TCPConfig, c_ad: FdAdapterConfig) {
-        assert!(
-            self.tcp.lock().unwrap().is_none(),
-            "listen_and_accept() with TCPConnection already initialized"
-        );
-
-        self.initialize_tcp(c_tcp);
-
-        self.datagram_adapter.lock().unwrap().set_config(c_ad);
-        self.datagram_adapter.lock().unwrap().set_listening(true);
-
-        eprintln!("DEBUG: Listening for incoming connection...");
-        let clone0 = self.tcp.clone();
-        self.tcp_loop(Box::new(move || {
-            let s = clone0.lock().unwrap().as_ref().unwrap().state();
-            s == TCPState::from(State::LISTEN)
-                || s == TCPState::from(State::SynRcvd)
-                || s == TCPState::from(State::SynSent)
-        }));
-        eprintln!(
-            "New connection from {}.",
-            self.datagram_adapter
-                .lock()
-                .unwrap()
-                .config()
-                .destination
-                .to_string()
-        );
-
-        let tcp_ = self.tcp.clone();
-        let main_thread_data_ = self.main_thread_data.clone();
-        let event_loop_ = self.event_loop.clone();
-        let abort_ = self.abort.clone();
-        let datagram_adapter_ = self.datagram_adapter.clone();
-        let _ = self.tcp_thread.insert(
-            thread::Builder::new()
-                .name("thread1".to_string())
-                .spawn(move || {
-                    let mut l = tcp_.lock().unwrap();
-                    assert!(l.as_ref().is_some(), "no TCP");
-                    {
-                        let mut base_time = timestamp_ms();
-                        loop {
-                            let ret = event_loop_
-                                .lock()
-                                .unwrap()
-                                .wait_next_event(TCPSpongeSocket::<AdapterT>::TCP_TICK_MS as i32);
-                            if ret == Exit || abort_.load(Ordering::SeqCst) {
-                                break;
-                            }
-
-                            if l.as_ref().unwrap().active() {
-                                let next_time = timestamp_ms();
-                                l.as_mut().unwrap().tick((next_time - base_time) as SizeT);
-                                datagram_adapter_
-                                    .lock()
-                                    .unwrap()
-                                    .tick((next_time - base_time) as SizeT);
-                                base_time = next_time;
-                            }
-                        }
-                    }
-
-                    main_thread_data_
-                        .clone()
-                        .lock()
-                        .unwrap()
-                        .shutdown(SHUT_RDWR);
-
-                    if !l.as_ref().unwrap().active() {
-                        eprintln!(
-                            "DEBUG: TCP connection finished {}",
-                            if l.as_ref().unwrap().state() == TCPState::from(State::RESET) {
-                                "uncleanly"
-                            } else {
-                                "cleanly."
-                            }
-                        );
-                    }
-                    l.take();
                 })
                 .unwrap(),
         );

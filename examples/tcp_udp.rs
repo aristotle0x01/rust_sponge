@@ -1,6 +1,10 @@
+use rust_sponge::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
+use rust_sponge::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use rust_sponge::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
+use rust_sponge::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
 use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
 use rust_sponge::util::socket::{AsSocket, AsSocketMut, TCPSocket, UDPSocket};
+use rust_sponge::{LossyTCPOverUDPSocketAdapter, LossyTCPOverUDPSpongeSocket};
 use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::exit;
@@ -128,5 +132,14 @@ fn main() {
         );
     }
 
-    // bidirectional_stream_copy(&mut socket);
+    let mut tcp_socket =
+        TCPSpongeSocket::new(LossyFdAdapter::new(TCPOverUDPSocketAdapter::new(udp_sock)));
+    if listen {
+        tcp_socket.listen_and_accept(&c_fsm, c_filt);
+    } else {
+        tcp_socket.connect(&c_fsm, c_filt);
+    }
+
+    // bidirectional_stream_copy(tcp_socket);
+    tcp_socket.wait_until_closed();
 }

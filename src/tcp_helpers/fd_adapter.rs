@@ -2,6 +2,7 @@ use crate::tcp_helpers::tcp_config::FdAdapterConfig;
 use crate::tcp_helpers::tcp_header::TCPHeader;
 use crate::tcp_helpers::tcp_segment::TCPSegment;
 use crate::util::buffer::Buffer;
+use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::util::parser::ParseResult;
 use crate::util::socket::UDPSocket;
 use crate::SizeT;
@@ -93,6 +94,16 @@ pub trait AsFdAdapterBaseMut: AsFdAdapterBase {
 pub struct TCPOverUDPSocketAdapter {
     fd_adapter_base: FdAdapterBase,
     sock: UDPSocket,
+}
+impl AsFileDescriptor for TCPOverUDPSocketAdapter {
+    fn as_file_descriptor(&self) -> &FileDescriptor {
+        self.sock.as_file_descriptor()
+    }
+}
+impl AsFileDescriptorMut for TCPOverUDPSocketAdapter {
+    fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
+        self.sock.as_file_descriptor_mut()
+    }
 }
 impl AsFdAdapterBase for TCPOverUDPSocketAdapter {
     fn as_fd_adapter_base(&self) -> &FdAdapterBase {
