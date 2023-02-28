@@ -141,7 +141,7 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
 }
 
 // cargo build --example tcp_ipv4
-// target/debug/examples/tcp_ipv4 -t 12 -w 1452
+// target/debug/apps/tcp_ipv4 -t 12 -w 1452
 // cargo run --example tcp_ipv4
 fn main() {
     let args: Vec<_> = env::args().collect();

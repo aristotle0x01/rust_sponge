@@ -7,7 +7,6 @@ use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
 use rust_sponge::util::parser::ParseResult;
 use rust_sponge::util::tun::TunFD;
 use rust_sponge::SizeT;
-use std::mem;
 
 fn hexdump(d: &str, size: SizeT) {
     println!("hexdump:{} {}", d.len(), size);

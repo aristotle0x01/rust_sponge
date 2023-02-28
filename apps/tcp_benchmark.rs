@@ -1,4 +1,3 @@
-use rand::Rng;
 use rust_sponge::tcp_connection::TCPConnection;
 use rust_sponge::tcp_helpers::tcp_config::TCPConfig;
 use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
@@ -14,6 +13,7 @@ use std::time::Instant;
 const len: SizeT = 100 * 1024 * 1024;
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+// #[bench]
 fn main() {
     main_loop(false);
     main_loop(true);

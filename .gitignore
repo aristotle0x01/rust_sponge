@@ -8,7 +8,7 @@ target/*
 .idea/*
 .DS_Store
 *.iml
-examples/test.rs
+apps/test.rs
 test
-examples/test
+apps/test
 .vscode/*

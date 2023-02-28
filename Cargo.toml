@@ -22,7 +22,7 @@ include       = [
   "CHANGELOG.md",
   "src/*.rs",
   "src/*/*.rs",
-  "examples/*.rs",
+  "apps/*.rs",
   "tests/*.rs",
 ]
 
@@ -41,5 +41,31 @@ rand = "0.8"
 env_logger = { version = "0.8.4", default-features = false }
 rand = "0.8"
 
+# https://subscription.packtpub.com/book/programming/9781800560963/2/ch02lvl1sec06/automating-build-management-with-cargo
+# cargo run –-bin tcp_native "-l" "127.0.0.1" "1234"
+[[bin]]
+name = "tcp_native"
+path = "apps/tcp_native.rs"
+
+[[bench]]
+name = "tcp_benchmark"
+path = "apps/tcp_benchmark.rs"
+
+[[example]]
+name = "bidirectional_stream_copy"
+path = "apps/bidirectional_stream_copy.rs"
+[[example]]
+name = "tcp_ipv4"
+path = "apps/tcp_ipv4.rs"
+[[example]]
+name = "tcp_native"
+path = "apps/tcp_native.rs"
+[[example]]
+name = "tcp_udp"
+path = "apps/tcp_udp.rs"
+[[example]]
+name = "tun"
+path = "apps/tun.rs"
 [[example]]
 name = "webget"
+path = "apps/webget.rs"

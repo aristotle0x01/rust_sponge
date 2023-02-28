@@ -111,7 +111,7 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
 }
 
 // cargo build --example tcp_udp
-// target/debug/examples/tcp_udp -t 12 -w 1452
+// target/debug/apps/tcp_udp -t 12 -w 1452
 // cargo run --example tcp_udp
 fn main() {
     let args: Vec<_> = env::args().collect();

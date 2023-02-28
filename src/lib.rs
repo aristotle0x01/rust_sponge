@@ -7,7 +7,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 // Disallow warnings when running tests.
 #![cfg_attr(test, deny(warnings))]
-// Disallow warnings in examples.
+// Disallow warnings in apps.
 #![doc(test(attr(deny(warnings))))]
 
 // macros used internally
