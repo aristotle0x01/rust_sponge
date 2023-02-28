@@ -2,16 +2,14 @@ use rust_sponge::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use rust_sponge::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use rust_sponge::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use rust_sponge::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
-use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
-use rust_sponge::util::socket::{AsSocket, AsSocketMut, TCPSocket, UDPSocket};
-use rust_sponge::{LossyTCPOverUDPSocketAdapter, LossyTCPOverUDPSpongeSocket};
+use rust_sponge::util::socket::{AsSocket, UDPSocket};
 use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::exit;
 use std::str::FromStr;
 
 mod bidirectional_stream_copy;
-use crate::bidirectional_stream_copy::bidirectional_stream_copy;
+use crate::bidirectional_stream_copy::bidirectional_stream_copy_sponge;
 
 pub const DPORT_DFLT: u16 = 1440;
 
@@ -140,6 +138,6 @@ fn main() {
         tcp_socket.connect(&c_fsm, c_filt);
     }
 
-    // bidirectional_stream_copy(tcp_socket);
+    bidirectional_stream_copy_sponge(&mut tcp_socket);
     tcp_socket.wait_until_closed();
 }

@@ -22,6 +22,22 @@ use std::thread::JoinHandle;
 //      let file = Arc::new(Mutex::new(File::create("foo.txt").unwrap()));
 // https://users.rust-lang.org/t/mutate-from-multiple-threads-without-interior-mutability/68896
 
+pub trait AsTCPSpongeSocketMut {
+    fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>>;
+    fn set_reuseaddr(&mut self) {
+        self.as_socket_mut().lock().unwrap().set_reuseaddr();
+    }
+    fn set_blocking(&mut self, block: bool) {
+        self.as_socket_mut().lock().unwrap().set_blocking(block);
+    }
+    fn write(&mut self, s: &String, write_all: bool) -> SizeT{
+        self.as_socket_mut().lock().unwrap().write(s, write_all)
+    }
+    fn shutdown(&mut self, how_: i32) {
+        self.as_socket_mut().lock().unwrap().shutdown(how_);
+    }
+}
+
 #[derive(Debug)]
 pub struct TCPSpongeSocket<AdapterT> {
     main_thread_data: Arc<Mutex<LocalStreamSocket>>,
@@ -35,29 +51,11 @@ pub struct TCPSpongeSocket<AdapterT> {
     outbound_shutdown: Arc<AtomicBool>,
     fully_acked: Arc<AtomicBool>,
 }
-// impl<AdapterT> AsFileDescriptor for TCPSpongeSocket<'_, AdapterT> {
-//     fn as_file_descriptor(&self) -> &FileDescriptor {
-//         self.main_thread_data.as_file_descriptor()
-//     }
-// }
-// impl<AdapterT> AsFileDescriptorMut for TCPSpongeSocket<'_, AdapterT> {
-//     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
-//         self.main_thread_data.as_file_descriptor_mut()
-//     }
-// }
-// impl<AdapterT> AsSocketMut for TCPSpongeSocket<'_, AdapterT> {
-//     fn as_socket_mut(&mut self) -> &mut Socket {
-//         self.main_thread_data.as_socket_mut()
-//     }
-//
-//     fn set_reuseaddr(&mut self) {
-//         self.as_socket_mut().set_reuseaddr();
-//     }
-//
-//     fn shutdown(&mut self, how_: i32) {
-//         self.as_socket_mut().shutdown(how_);
-//     }
-// }
+impl<AdapterT> AsTCPSpongeSocketMut for TCPSpongeSocket<AdapterT> {
+    fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
+        self.main_thread_data.clone()
+    }
+}
 impl<AdapterT> Drop for TCPSpongeSocket<AdapterT> {
     fn drop(&mut self) {
         if self.abort.load(Ordering::SeqCst) == false {

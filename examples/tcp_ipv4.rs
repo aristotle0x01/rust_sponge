@@ -1,21 +1,16 @@
-use rust_sponge::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use rust_sponge::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use rust_sponge::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use rust_sponge::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
-use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
-use rust_sponge::util::socket::{AsSocket, AsSocketMut, TCPSocket, UDPSocket};
-use rust_sponge::{LossyTCPOverUDPSocketAdapter, LossyTCPOverUDPSpongeSocket};
 use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::exit;
 use std::str::FromStr;
-use rand::{Rng, thread_rng};
-use rand::rngs::ThreadRng;
+use rand::{thread_rng, Rng};
 use rust_sponge::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
 use rust_sponge::util::tun::TunFD;
 
 mod bidirectional_stream_copy;
-use crate::bidirectional_stream_copy::bidirectional_stream_copy;
+use crate::bidirectional_stream_copy::bidirectional_stream_copy_sponge;
 
 pub const TUN_DFLT: &'static str = "tun144";
 pub const LOCAL_ADDRESS_DFLT: &'static str = "169.254.144.9";
@@ -157,7 +152,7 @@ fn main() {
 
     let (c_fsm, c_filt, listen, tun_dev_name) = get_config(args.len() as i32, &args);
 
-    let tun_fd = TunFD::new(if tun_dev_name.is_empty() {TUN_DFLT} else {tun_dev_name});
+    let tun_fd = TunFD::new(if tun_dev_name.is_empty() {TUN_DFLT} else {&tun_dev_name});
     let mut tcp_socket =
         TCPSpongeSocket::new(LossyFdAdapter::new(TCPOverIPv4OverTunFdAdapter::new(tun_fd)));
     if listen {
@@ -166,7 +161,7 @@ fn main() {
         tcp_socket.connect(&c_fsm, c_filt);
     }
 
-    // bidirectional_stream_copy(tcp_socket);
+    bidirectional_stream_copy_sponge(&mut tcp_socket);
     tcp_socket.wait_until_closed();
 }
 
