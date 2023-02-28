@@ -6,7 +6,7 @@ use std::net::Ipv4Addr;
 #[derive(Debug, Copy, Clone)]
 pub struct IPv4Header {
     ver: u8,
-    hlen: u8,
+    pub(crate) hlen: u8,
     tos: u8,
     pub len: u16,
     id: u16,
@@ -16,8 +16,8 @@ pub struct IPv4Header {
     ttl: u8,
     pub proto: u8,
     pub(crate) cksum: u16,
-    src: u32,
-    dst: u32,
+    pub(crate) src: u32,
+    pub(crate) dst: u32,
 }
 impl IPv4Header {
     pub const LENGTH: SizeT = 20 as SizeT;

@@ -8,7 +8,7 @@ pub struct TCPHeader {
     pub dport: u16,
     pub seqno: WrappingInt32,
     pub ackno: WrappingInt32,
-    doff: u8,
+    pub(crate) doff: u8,
     urg: bool,
     pub ack: bool,
     psh: bool,

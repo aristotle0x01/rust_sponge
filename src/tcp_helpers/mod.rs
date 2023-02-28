@@ -7,3 +7,5 @@ pub mod tcp_header;
 pub mod tcp_segment;
 pub mod tcp_sponge_socket;
 pub mod tcp_state;
+pub mod tcp_over_ip;
+pub mod tuntap_adapter;
