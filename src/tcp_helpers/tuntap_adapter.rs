@@ -1,4 +1,3 @@
-use crate::InternetDatagram;
 use crate::tcp_helpers::fd_adapter::{AsFdAdapterBase, AsFdAdapterBaseMut, FdAdapterBase};
 use crate::tcp_helpers::ipv4_header::IPv4Header;
 use crate::tcp_helpers::tcp_over_ip::TCPOverIPv4Adapter;
@@ -7,6 +6,7 @@ use crate::util::buffer::Buffer;
 use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::util::parser::ParseResult;
 use crate::util::tun::TunFD;
+use crate::InternetDatagram;
 
 #[derive(Debug)]
 pub struct TCPOverIPv4OverTunFdAdapter {
@@ -44,7 +44,10 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverTunFdAdapter {
     }
 
     fn write_adp(&mut self, seg: &mut TCPSegment) {
-        self.tun.write(&String::from_utf8(self.ip_adapter.wrap_tcp_in_ip(seg).serialize()).unwrap(), true);
+        self.tun.write(
+            &String::from_utf8(self.ip_adapter.wrap_tcp_in_ip(seg).serialize()).unwrap(),
+            true,
+        );
     }
 }
 impl TCPOverIPv4OverTunFdAdapter {
@@ -52,7 +55,7 @@ impl TCPOverIPv4OverTunFdAdapter {
     pub fn new(tun_: TunFD) -> TCPOverIPv4OverTunFdAdapter {
         TCPOverIPv4OverTunFdAdapter {
             ip_adapter: TCPOverIPv4Adapter::new(),
-            tun: tun_
+            tun: tun_,
         }
     }
 
@@ -66,8 +69,3 @@ impl TCPOverIPv4OverTunFdAdapter {
         &mut self.tun
     }
 }
-
-
-
-
-

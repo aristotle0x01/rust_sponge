@@ -47,8 +47,8 @@ fn check_argc(argc: i32, argv: &Vec<String>, curr: i32, err: &str) {
 fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, bool) {
     let mut c_fsm = TCPConfig::default();
     let mut c_filt = FdAdapterConfig {
-        source: SocketAddrV4::from_str("").unwrap(),
-        destination: SocketAddrV4::from_str("").unwrap(),
+        source: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
+        destination: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
         loss_rate_dn: 0,
         loss_rate_up: 0,
     };
@@ -94,7 +94,7 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
     if listen {
         c_filt
             .source
-            .set_ip(Ipv4Addr::from_str("127.0.0.1").unwrap());
+            .set_ip(Ipv4Addr::from_str(argv[(argc - 2) as usize].as_str()).unwrap());
         c_filt
             .source
             .set_port(argv[(argc - 1) as usize].parse().unwrap());
@@ -105,10 +105,21 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
         c_filt
             .destination
             .set_port(argv[(argc - 1) as usize].parse().unwrap());
+        c_filt
+            .source
+            .set_ip(Ipv4Addr::from_str("169.254.144.1").unwrap());
+        c_filt.source.set_port(9801);
     }
 
     (c_fsm, c_filt, listen)
 }
+
+//****Run Notes:
+// both sides must use tcp_udp simultaneously since its underneath udp adapter
+// Server side: ./target/debug/examples/tcp_udp -l -t 12 -w 1450  169.254.144.1 7107
+// Client side: RUST_BACKTRACE=1 ./examples/tcp_udp -t 12 -w 1450  169.254.144.1 7107
+//              ./examples/tcp_udp -l -t 12 -w 1450  169.254.144.1 7107
+//              RUST_BACKTRACE=1 ../../txrx.sh -ucS
 
 // cargo build --example tcp_udp
 // target/debug/apps/tcp_udp -t 12 -w 1452
@@ -121,6 +132,12 @@ fn main() {
     }
 
     let (c_fsm, c_filt, listen) = get_config(args.len() as i32, &args);
+    eprintln!(
+        "tcp:{}, adapter:{},{}",
+        c_fsm.clone().to_string(),
+        c_filt.clone().destination.to_string(),
+        c_filt.clone().source.to_string()
+    );
 
     let udp_sock = UDPSocket::new();
     if listen {

@@ -1,13 +1,13 @@
+use rand::{thread_rng, Rng};
 use rust_sponge::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use rust_sponge::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use rust_sponge::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
+use rust_sponge::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
+use rust_sponge::util::tun::TunFD;
 use std::env;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process::exit;
 use std::str::FromStr;
-use rand::{thread_rng, Rng};
-use rust_sponge::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
-use rust_sponge::util::tun::TunFD;
 
 mod bidirectional_stream_copy;
 use crate::bidirectional_stream_copy::bidirectional_stream_copy_sponge;
@@ -21,7 +21,10 @@ fn show_usage(argv0: &str, msg: &str) {
     print!("   --                                                              --\n\n");
     print!("   -l              Server (listen) mode.                           (client mode)\n");
     print!("                   In server mode, <host>:<port> is the address to bind.\n\n");
-    print!("   -a <addr>       Set source address (client mode only)           {}\n\n", LOCAL_ADDRESS_DFLT);
+    print!(
+        "   -a <addr>       Set source address (client mode only)           {}\n\n",
+        LOCAL_ADDRESS_DFLT
+    );
     print!("   -s <port>       Set source port (client mode only)              (random)\n\n");
 
     print!(
@@ -32,7 +35,10 @@ fn show_usage(argv0: &str, msg: &str) {
         "   -t <tmout>      Set rt_timeout to tmout                         {}\n\n",
         TCPConfig::TIMEOUT_DFLT
     );
-    print!("   -d <tundev>     Connect to tun <tundev>                         {}\n\n", TUN_DFLT);
+    print!(
+        "   -d <tundev>     Connect to tun <tundev>                         {}\n\n",
+        TUN_DFLT
+    );
     print!("   -Lu <loss>      Set uplink loss to <rate> (float in 0..1)       (no loss)\n");
     print!("   -Ld <loss>      Set downlink loss to <rate> (float in 0..1)     (no loss)\n\n");
     print!("   -h              Show this message.\n\n");
@@ -120,8 +126,12 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
             .set_ip(Ipv4Addr::from_str("127.0.0.1").unwrap());
         c_filt
             .source
-            .set_port(argv[(curr+1) as usize].parse().unwrap());
-        assert_ne!(c_filt.source.port(), 0, "ERROR: listen port cannot be zero in server mode.");
+            .set_port(argv[(curr + 1) as usize].parse().unwrap());
+        assert_ne!(
+            c_filt.source.port(),
+            0,
+            "ERROR: listen port cannot be zero in server mode."
+        );
     } else {
         c_filt
             .destination
@@ -132,9 +142,7 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
         c_filt
             .source
             .set_ip(Ipv4Addr::from_str(source_address.as_str()).unwrap());
-        c_filt
-            .source
-            .set_port(source_port.parse().unwrap());
+        c_filt.source.set_port(source_port.parse().unwrap());
     }
 
     (c_fsm, c_filt, listen, tundev)
@@ -152,9 +160,14 @@ fn main() {
 
     let (c_fsm, c_filt, listen, tun_dev_name) = get_config(args.len() as i32, &args);
 
-    let tun_fd = TunFD::new(if tun_dev_name.is_empty() {TUN_DFLT} else {&tun_dev_name});
-    let mut tcp_socket =
-        TCPSpongeSocket::new(LossyFdAdapter::new(TCPOverIPv4OverTunFdAdapter::new(tun_fd)));
+    let tun_fd = TunFD::new(if tun_dev_name.is_empty() {
+        TUN_DFLT
+    } else {
+        &tun_dev_name
+    });
+    let mut tcp_socket = TCPSpongeSocket::new(LossyFdAdapter::new(
+        TCPOverIPv4OverTunFdAdapter::new(tun_fd),
+    ));
     if listen {
         tcp_socket.listen_and_accept(&c_fsm, c_filt);
     } else {
@@ -164,6 +177,3 @@ fn main() {
     bidirectional_stream_copy_sponge(&mut tcp_socket);
     tcp_socket.wait_until_closed();
 }
-
-
-

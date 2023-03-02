@@ -12,7 +12,7 @@ pub struct LossyFdAdapter<AdapterT> {
 }
 impl<AdapterT> AsFileDescriptor for LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
 {
     fn as_file_descriptor(&self) -> &FileDescriptor {
         self.adapter.as_file_descriptor()
@@ -20,7 +20,7 @@ where
 }
 impl<AdapterT> AsFileDescriptorMut for LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
 {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
         self.adapter.as_file_descriptor_mut()
@@ -28,7 +28,7 @@ where
 }
 impl<AdapterT> AsFdAdapterBase for LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
 {
     fn as_fd_adapter_base(&self) -> &FdAdapterBase {
         self.adapter.as_fd_adapter_base()
@@ -36,7 +36,7 @@ where
 }
 impl<AdapterT> AsFdAdapterBaseMut for LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
 {
     fn as_fd_adapter_base_mut(&mut self) -> &mut FdAdapterBase {
         self.adapter.as_fd_adapter_base_mut()
@@ -52,7 +52,7 @@ where
 }
 impl<AdapterT> LossyFdAdapter<AdapterT>
 where
-    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut
+    AdapterT: AsFdAdapterBaseMut + AsFileDescriptorMut,
 {
     #[allow(dead_code)]
     pub fn new(_adapter: AdapterT) -> LossyFdAdapter<AdapterT> {

@@ -133,13 +133,21 @@ impl Socket {
 
 pub trait AsSocket: AsFileDescriptor {
     fn as_socket(&self) -> &Socket;
-    fn connect(&self, _host: &str, _port: u16);
-    fn bind(&self, _host: &str, _port: u16);
+    fn connect(&self, _host: &str, _port: u16) {
+        self.as_socket().connect(_host, _port);
+    }
+    fn bind(&self, _host: &str, _port: u16) {
+        self.as_socket().bind(_host, _port);
+    }
 }
 pub trait AsSocketMut: AsFileDescriptorMut {
     fn as_socket_mut(&mut self) -> &mut Socket;
-    fn set_reuseaddr(&mut self);
-    fn shutdown(&mut self, how_: i32);
+    fn set_reuseaddr(&mut self) {
+        self.as_socket_mut().set_reuseaddr();
+    }
+    fn shutdown(&mut self, how_: i32) {
+        self.as_socket_mut().shutdown(how_);
+    }
 }
 
 #[derive(Debug)]
@@ -159,14 +167,6 @@ impl AsSocket for UDPSocket {
     fn as_socket(&self) -> &Socket {
         &self.0
     }
-
-    fn connect(&self, _host: &str, _port: u16) {
-        self.as_socket().connect(_host, _port);
-    }
-
-    fn bind(&self, _host: &str, _port: u16) {
-        self.as_socket().bind(_host, _port);
-    }
 }
 impl AsFileDescriptorMut for UDPSocket {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
@@ -176,14 +176,6 @@ impl AsFileDescriptorMut for UDPSocket {
 impl AsSocketMut for UDPSocket {
     fn as_socket_mut(&mut self) -> &mut Socket {
         &mut self.0
-    }
-
-    fn set_reuseaddr(&mut self) {
-        self.as_socket_mut().set_reuseaddr();
-    }
-
-    fn shutdown(&mut self, how_: i32) {
-        self.as_socket_mut().shutdown(how_);
     }
 }
 impl UDPSocket {
@@ -208,8 +200,6 @@ impl UDPSocket {
 
     #[allow(dead_code)]
     pub fn recv_into(&mut self, datagram: &mut ReceivedDatagram, _mtu: SizeT) {
-        // let r = nix::sys::socket::recvfrom::<SockaddrIn>(self.0.fd_num(), datagram.payload.as_mut());
-
         datagram.payload.resize(_mtu, 0);
 
         let rev_len = unsafe {
@@ -334,14 +324,6 @@ impl AsSocket for TCPSocket {
     fn as_socket(&self) -> &Socket {
         &self.0
     }
-
-    fn connect(&self, _host: &str, _port: u16) {
-        self.as_socket().connect(_host, _port);
-    }
-
-    fn bind(&self, _host: &str, _port: u16) {
-        self.as_socket().bind(_host, _port);
-    }
 }
 impl AsFileDescriptorMut for TCPSocket {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
@@ -351,14 +333,6 @@ impl AsFileDescriptorMut for TCPSocket {
 impl AsSocketMut for TCPSocket {
     fn as_socket_mut(&mut self) -> &mut Socket {
         &mut self.0
-    }
-
-    fn set_reuseaddr(&mut self) {
-        self.as_socket_mut().set_reuseaddr();
-    }
-
-    fn shutdown(&mut self, how_: i32) {
-        self.as_socket_mut().shutdown(how_);
     }
 }
 impl TCPSocket {
@@ -397,14 +371,6 @@ impl AsSocket for LocalStreamSocket {
     fn as_socket(&self) -> &Socket {
         &self.0
     }
-
-    fn connect(&self, _host: &str, _port: u16) {
-        self.as_socket().connect(_host, _port);
-    }
-
-    fn bind(&self, _host: &str, _port: u16) {
-        self.as_socket().bind(_host, _port);
-    }
 }
 impl AsFileDescriptorMut for LocalStreamSocket {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor {
@@ -414,14 +380,6 @@ impl AsFileDescriptorMut for LocalStreamSocket {
 impl AsSocketMut for LocalStreamSocket {
     fn as_socket_mut(&mut self) -> &mut Socket {
         &mut self.0
-    }
-
-    fn set_reuseaddr(&mut self) {
-        self.as_socket_mut().set_reuseaddr();
-    }
-
-    fn shutdown(&mut self, how_: i32) {
-        self.as_socket_mut().shutdown(how_);
     }
 }
 impl LocalStreamSocket {

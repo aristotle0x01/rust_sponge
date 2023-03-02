@@ -22,20 +22,8 @@ use std::thread::JoinHandle;
 //      let file = Arc::new(Mutex::new(File::create("foo.txt").unwrap()));
 // https://users.rust-lang.org/t/mutate-from-multiple-threads-without-interior-mutability/68896
 
-pub trait AsTCPSpongeSocketMut {
+pub trait AsLocalStreamSocketMut {
     fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>>;
-    fn set_reuseaddr(&mut self) {
-        self.as_socket_mut().lock().unwrap().set_reuseaddr();
-    }
-    fn set_blocking(&mut self, block: bool) {
-        self.as_socket_mut().lock().unwrap().set_blocking(block);
-    }
-    fn write(&mut self, s: &String, write_all: bool) -> SizeT{
-        self.as_socket_mut().lock().unwrap().write(s, write_all)
-    }
-    fn shutdown(&mut self, how_: i32) {
-        self.as_socket_mut().lock().unwrap().shutdown(how_);
-    }
 }
 
 #[derive(Debug)]
@@ -51,20 +39,21 @@ pub struct TCPSpongeSocket<AdapterT> {
     outbound_shutdown: Arc<AtomicBool>,
     fully_acked: Arc<AtomicBool>,
 }
-impl<AdapterT> AsTCPSpongeSocketMut for TCPSpongeSocket<AdapterT> {
+impl<AdapterT> AsLocalStreamSocketMut for TCPSpongeSocket<AdapterT> {
     fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
         self.main_thread_data.clone()
     }
 }
 impl<AdapterT> Drop for TCPSpongeSocket<AdapterT> {
     fn drop(&mut self) {
-        if self.abort.load(Ordering::SeqCst) == false {
+        if self.tcp_thread.is_some() {
             eprintln!("Warning: unclean shutdown of TCPSpongeSocket");
             self.abort.store(true, Ordering::SeqCst);
 
             let j = self.tcp_thread.take();
             j.unwrap().join().expect("TCPSpongeSocket join during Drop");
         }
+        self.abort.store(true, Ordering::SeqCst);
     }
 }
 impl<AdapterT> TCPSpongeSocket<AdapterT>
@@ -145,7 +134,8 @@ where
             Direction::In,
             Box::new(move || {
                 let mut l = tcp_.lock().unwrap();
-                let seg = adapter_.lock().unwrap().read_adp();
+                let mut adapter_guard = adapter_.lock().unwrap();
+                let seg = adapter_guard.read_adp();
                 if seg.is_some() {
                     l.as_mut().unwrap().segment_received(&seg.unwrap());
                 }
@@ -156,7 +146,7 @@ where
                 {
                     eprintln!(
                         "DEBUG: Outbound stream to {} has been fully acknowledged.",
-                        adapter_.lock().unwrap().config().destination.to_string()
+                        adapter_guard.config().destination.to_string()
                     );
                     fully_acked_.store(true, Ordering::SeqCst);
                 }
@@ -187,6 +177,7 @@ where
                     .lock()
                     .as_mut()
                     .unwrap()
+                    .as_socket_mut()
                     .read(l.as_ref().unwrap().remaining_outbound_capacity() as u32);
                 let len = data.len();
                 let amount_written = l.as_mut().unwrap().write(&data);
@@ -242,7 +233,7 @@ where
                 let inbound = l.as_mut().unwrap().inbound_stream_mut();
                 let amount_to_write = min(65536, inbound.buffer_size());
                 let buffer = inbound.peek_output(amount_to_write);
-                let bytes_written = thread_data_.lock().unwrap().write(&buffer, false);
+                let bytes_written = thread_data_.lock().unwrap().as_socket_mut().write(&buffer, false);
                 inbound.pop_output(bytes_written);
 
                 if inbound.eof() || inbound.error() {

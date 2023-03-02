@@ -120,7 +120,7 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
 
         let b =
             FdAdapterConfig::eq_to_sockaddr(&datagram.source_address, &self.config().destination);
-        if !self.listening() && b {
+        if !self.listening() && !b {
             return None;
         }
 
@@ -146,6 +146,7 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
     fn write_adp(&mut self, seg: &mut TCPSegment) {
         seg.header_mut().sport = self.config().source.port();
         seg.header_mut().dport = self.config().destination.port();
+
         self.sock.sendto(
             &self.fd_adapter_base.cfg.destination,
             &mut seg.serialize_u8(0),

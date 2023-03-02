@@ -78,7 +78,7 @@ impl FileDescriptor {
         let mut s: Vec<u8> = Vec::with_capacity(_limit as usize);
         self.read_into(&mut s, _limit);
 
-        String::from_utf8(s).unwrap()
+        String::from_utf8_lossy(&mut s).to_string()
     }
 
     #[allow(dead_code)]
