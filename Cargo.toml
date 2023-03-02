@@ -46,26 +46,22 @@ rand = "0.8"
 [[bin]]
 name = "tcp_native"
 path = "apps/tcp_native.rs"
-
-[[bench]]
+[[bin]]
+name = "tcp_ipv4"
+path = "apps/tcp_ipv4.rs"
+[[bin]]
+name = "tcp_udp"
+path = "apps/tcp_udp.rs"
+[[bin]]
+name = "tun"
+path = "apps/tun.rs"
+[[bin]]
+name = "webget"
+path = "apps/webget.rs"
+[[bin]]
 name = "tcp_benchmark"
 path = "apps/tcp_benchmark.rs"
 
 [[example]]
 name = "bidirectional_stream_copy"
 path = "apps/bidirectional_stream_copy.rs"
-[[example]]
-name = "tcp_ipv4"
-path = "apps/tcp_ipv4.rs"
-[[example]]
-name = "tcp_native"
-path = "apps/tcp_native.rs"
-[[example]]
-name = "tcp_udp"
-path = "apps/tcp_udp.rs"
-[[example]]
-name = "tun"
-path = "apps/tun.rs"
-[[example]]
-name = "webget"
-path = "apps/webget.rs"
