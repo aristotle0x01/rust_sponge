@@ -59,8 +59,8 @@ fn check_argc(argc: i32, argv: &Vec<String>, curr: i32, err: &str) {
 fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, bool, String) {
     let mut c_fsm = TCPConfig::default();
     let mut c_filt = FdAdapterConfig {
-        source: SocketAddrV4::from_str("").unwrap(),
-        destination: SocketAddrV4::from_str("").unwrap(),
+        source: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
+        destination: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
         loss_rate_dn: 0,
         loss_rate_up: 0,
     };
@@ -159,6 +159,12 @@ fn main() {
     }
 
     let (c_fsm, c_filt, listen, tun_dev_name) = get_config(args.len() as i32, &args);
+    eprintln!(
+        "tcp:{}, adapter:{},{}",
+        c_fsm.clone().to_string(),
+        c_filt.clone().destination.to_string(),
+        c_filt.clone().source.to_string()
+    );
 
     let tun_fd = TunFD::new(if tun_dev_name.is_empty() {
         TUN_DFLT

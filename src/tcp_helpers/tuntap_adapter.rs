@@ -45,7 +45,7 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverTunFdAdapter {
 
     fn write_adp(&mut self, seg: &mut TCPSegment) {
         self.tun.write(
-            &String::from_utf8(self.ip_adapter.wrap_tcp_in_ip(seg).serialize()).unwrap(),
+            &String::from_utf8_lossy(self.ip_adapter.wrap_tcp_in_ip(seg).serialize().as_slice()).to_string(),
             true,
         );
     }

@@ -136,8 +136,8 @@ impl IPv4Header {
     }
 
     pub fn pseudo_cksum(&self) -> u32 {
-        let mut pcksum: u32 = self.src >> 16 + self.src & 0xffff;
-        pcksum += self.dst >> 16 + self.dst & 0xffff;
+        let mut pcksum: u32 = (self.src >> 16) + (self.src & 0xffff);
+        pcksum += (self.dst >> 16) + (self.dst & 0xffff);
         pcksum += self.proto as u32;
         pcksum += self.payload_length() as u32;
 
