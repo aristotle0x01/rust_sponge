@@ -1,6 +1,10 @@
 use crate::SizeT;
 use std::collections::VecDeque;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+
+// type conversion and Deref Trait
+// https://doc.rust-lang.org/book/ch15-02-deref.html
 
 // semantics of c++ std::move() std::string &str
 // https://stackoverflow.com/questions/3413470/what-is-stdmove-and-when-should-it-be-used
@@ -37,9 +41,22 @@ impl Buffer {
     #[allow(dead_code)]
     pub fn str(&self) -> &[u8] {
         if self.storage.is_empty() {
-            return Buffer::EMPTY_VEC;
+            &self.storage[0..0]
+        } else {
+            // assert!(self.starting_offset <= self.storage.len());
+            &self.storage[self.starting_offset..self.storage.len()]
         }
-        &self.storage[self.starting_offset..self.storage.len()]
+    }
+
+    #[allow(dead_code)]
+    pub fn str_mut(&mut self) -> &mut [u8] {
+        if self.storage.is_empty() {
+            &mut self.storage[0..0]
+        } else {
+            let len = self.storage.len() as SizeT;
+            // assert!(self.starting_offset <= len);
+            &mut self.storage[self.starting_offset..len]
+        }
     }
 
     #[allow(dead_code)]
@@ -63,7 +80,6 @@ impl Buffer {
             panic!("Buffer::remove_prefix");
         }
         self.starting_offset += n;
-
         if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
             self.storage.clear();
             assert!(self.storage.is_empty());
@@ -84,6 +100,19 @@ impl From<String> for Buffer {
             storage: Vec::from(s),
             starting_offset: 0,
         }
+    }
+}
+impl Deref for Buffer {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.storage[self.starting_offset..self.storage.len()]
+    }
+}
+impl DerefMut for Buffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        let len = self.storage.len() as SizeT;
+        &mut self.storage[self.starting_offset..len]
     }
 }
 
@@ -184,5 +213,58 @@ impl AsRef<Buffer> for BufferList {
             1 => self.buffers().front().unwrap(),
             _ => panic!("BufferList: please use concatenate() to combine a multi-Buffer BufferList into one Buffer"),
         }
+    }
+}
+
+// Test Organization
+// https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch11-03-test-organization.html
+// https://doc.rust-lang.org/cargo/commands/cargo-test.html
+#[cfg(test)]
+mod tests {
+    use crate::util::buffer::Buffer;
+
+    fn deref_(b: &[u8]) {
+        println!("{}", String::from_utf8_lossy(b));
+    }
+
+    fn deref_mut_(b: &mut [u8]) {
+        println!("before:{}", String::from_utf8_lossy(b));
+        let c = vec![49;b.len()];
+        b.copy_from_slice(&c);
+        println!("after:{}", String::from_utf8_lossy(b));
+    }
+
+    // cargo test --lib test_deref
+    #[test]
+    fn test_deref() {
+        let b = Buffer::new("123".to_string().into_bytes());
+        deref_(&b);
+    }
+
+    #[test]
+    fn test_deref_mut() {
+        let mut b = Buffer::new("123".to_string().into_bytes());
+        deref_mut_(&mut b);
+    }
+
+    #[test]
+    fn test_empty_str() {
+        let b = Buffer::new(Vec::new());
+        let s = b.str();
+        assert_eq!(b.starting_offset, 0);
+        assert_eq!(b.storage.len(), 0);
+        assert!(s.is_empty());
+    }
+
+    // cargo test --lib test_remove_prefix -- --show-output
+    #[test]
+    #[should_panic]
+    fn test_remove_prefix() {
+        let mut b = Buffer::new("123".to_string().into_bytes());
+        b.remove_prefix(1);
+        assert_eq!(b.str().len(), 2);
+        b.remove_prefix(2);
+        assert_eq!(b.str().len(), 0);
+        b.remove_prefix(1);
     }
 }
