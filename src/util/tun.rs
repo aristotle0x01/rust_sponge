@@ -100,10 +100,7 @@ impl TunTapFD {
         } else {
             libc::IFF_TAP
         } | libc::IFF_NO_PI) as i16;
-        //let req: Box<InterfaceRequest> = Box::new(ifr);
         let ctl_ = unsafe {
-            // todo: TUN_MAGIC?
-            //       size_of::<c_int>() or size_of::<c_ulong>() ?
             libc::ioctl(
                 fd_desc.fd_num(),
                 nix::request_code_write!(
@@ -116,48 +113,6 @@ impl TunTapFD {
             )
         };
         system_call("ioctl", ctl_ as i32, 0);
-
-        TunTapFD { fd: fd_desc }
-    }
-
-    #[allow(dead_code)]
-    pub fn new2(devname_: &String, is_tun_: bool) -> TunTapFD {
-        let t_ = unsafe { libc::open(CLONEDEV.as_ptr() as *const c_char, libc::O_RDWR) };
-        let fd_ = system_call("open", t_ as i32, 0);
-        let fd_desc = FileDescriptor::new(fd_);
-
-        let mut ifr = InterfaceRequest::with_interface_name(devname_);
-        ifr.union.flags = (if is_tun_ {
-            libc::IFF_TUN
-        } else {
-            libc::IFF_TAP
-        } | libc::IFF_NO_PI) as i16;
-        let mut req: Box<InterfaceRequest> = Box::new(ifr);
-        // let ctl_ = unsafe {
-        //     // libc::ioctl(
-        //     //     fd_desc.fd_num(),
-        //     //     nix::request_code_write!(TUN_MAGIC, TUN_SET_IFF, size_of::<c_int>()),
-        //     //     &mut *req,
-        //     // )
-        //     // libc::ioctl(
-        //     //     fd_desc.fd_num(),
-        //     //     tun_setiff(fd_desc.fd_num(), req),
-        //     //     req
-        //     // )
-        //     tun_set_iff(fd_, &mut ifr as *mut _)
-        // };
-
-        // https://stackoverflow.com/questions/41478901/how-to-use-nixs-ioctl
-        match unsafe { tun_set_iff(fd_desc.fd_num(), req.as_mut()) } {
-            // match unsafe { tun_set_iff(fd_desc.fd_num(), &mut ifr as *mut _) } {
-            // match unsafe { tun_set_iff(fd_desc.fd_num(), req.as_ref()) } {
-            Ok(ret) => println!("tun_set_iff succeeded with ret = {}", ret),
-            Err(e) => println!("*** tun_set_iff failed with error: {}", e),
-        }
-        // if ctl_.is_err() {
-        //     panic!("ioctl err {:?}", ctl_.err().unwrap());
-        // }
-        // system_call("ioctl", ctl_.unwrap() as i32, 0);
 
         TunTapFD { fd: fd_desc }
     }

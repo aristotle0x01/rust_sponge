@@ -30,7 +30,7 @@ impl StreamReassembler {
     }
 
     #[allow(dead_code)]
-    pub fn push_substring(&mut self, data: &String, index: u64, eof: bool) {
+    pub fn push_substring(&mut self, data: &[u8], index: u64, eof: bool) {
         if eof {
             self.ending_index = index + data.len() as u64;
             self.ended = true;
@@ -68,15 +68,15 @@ impl StreamReassembler {
             let d_index: SizeT = (data_start_stream_index - index) as SizeT;
             let begin_index: SizeT = (data_start_stream_index % (self.capacity as u64)) as SizeT;
             if count <= (self.capacity - begin_index) {
-                let writable = &data.as_bytes()[d_index..(d_index + count)];
+                let writable = &data[d_index..(d_index + count)];
                 self.buffer[begin_index..(begin_index + count)].copy_from_slice(writable);
             } else {
                 let size_1: SizeT = self.capacity - begin_index;
-                let writable1 = &data.as_bytes()[d_index..(d_index + size_1)];
+                let writable1 = &data[d_index..(d_index + size_1)];
                 self.buffer[begin_index..self.capacity].copy_from_slice(writable1);
 
                 let size_2: SizeT = count - size_1;
-                let writable2 = &data.as_bytes()[(d_index + size_1)..(d_index + size_1 + size_2)];
+                let writable2 = &data[(d_index + size_1)..(d_index + size_1 + size_2)];
                 self.buffer[0..size_2].copy_from_slice(writable2);
             }
 
@@ -166,22 +166,19 @@ impl StreamReassembler {
             return;
         }
 
-        let mut r = String::with_capacity(count);
+        let mut r = Vec::with_capacity(count);
         let begin_index: SizeT = (self.next_stream_index % self.capacity as u64) as SizeT;
 
         if count <= (self.capacity - begin_index) {
-            let readable = self.buffer[begin_index..(begin_index + count)].to_vec();
-            r.push_str(&(String::from_utf8(readable).unwrap()));
+            r.extend_from_slice(&self.buffer[begin_index..(begin_index + count)]);
         } else {
             let size_1 = self.capacity - begin_index;
-            let readable1 = self.buffer[begin_index..(begin_index + size_1)].to_vec();
-            r.push_str(&(String::from_utf8(readable1).unwrap()));
+            r.extend_from_slice(&self.buffer[begin_index..(begin_index + size_1)]);
 
             let size_2 = count - size_1;
-            let readable2 = self.buffer[0..size_2].to_vec();
-            r.push_str(&(String::from_utf8(readable2).unwrap()));
+            r.extend_from_slice(&self.buffer[0..size_2]);
         }
-        self.output.write(&r);
+        self.output.write(r.as_slice());
 
         if (self.next_stream_index + count as u64) == second {
             self.marker_map.remove(&first);

@@ -31,16 +31,16 @@ impl ByteStream {
     }
 
     #[allow(dead_code)]
-    pub fn write(&mut self, data: &String) -> SizeT {
+    pub fn write(&mut self, data: &[u8]) -> SizeT {
         let capacity = self.capacity;
-        let bytes_to_write = cmp::min(self.remaining_capacity(), data.as_bytes().len());
+        let bytes_to_write = cmp::min(self.remaining_capacity(), data.len());
         if bytes_to_write == 0 {
             let w: SizeT = 0;
             return w;
         }
 
         if bytes_to_write <= (capacity - self.write_pos) {
-            let writable = &data.as_bytes()[..bytes_to_write];
+            let writable = &data[..bytes_to_write];
             // ref: https://stackoverflow.com/questions/66609964/rust-looking-for-a-c-memcpy-equivalent
             self.buffer[self.write_pos..(self.write_pos + bytes_to_write)]
                 .copy_from_slice(writable);
@@ -48,12 +48,12 @@ impl ByteStream {
             self.total_write_count = self.total_write_count + bytes_to_write;
         } else {
             let size_1 = capacity - self.write_pos;
-            let writable1 = &data.as_bytes()[0..size_1];
+            let writable1 = &data[0..size_1];
             self.buffer[self.write_pos..(self.write_pos + size_1)].copy_from_slice(writable1);
             self.write_pos = (self.write_pos + size_1) % capacity;
 
             let size_2 = bytes_to_write - size_1;
-            let writable2 = &data.as_bytes()[size_1..bytes_to_write];
+            let writable2 = &data[size_1..bytes_to_write];
             self.buffer[self.write_pos..(self.write_pos + size_2)].copy_from_slice(writable2);
             self.write_pos = (self.write_pos + size_2) % capacity;
 
@@ -65,30 +65,26 @@ impl ByteStream {
     }
 
     #[allow(dead_code)]
-    pub fn read(&mut self, len: SizeT) -> String {
+    pub fn read(&mut self, len: SizeT) -> Vec<u8> {
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
         if bytes_to_read == 0 {
-            return String::from("");
+            return Vec::new();
         }
 
-        let mut r = String::with_capacity(bytes_to_read);
+        let mut r = Vec::with_capacity(bytes_to_read);
 
         if bytes_to_read <= (capacity - self.read_pos) {
-            // todo: to_vec() by clone may hereby suffer a perf penalty
-            let readable = self.buffer[self.read_pos..(self.read_pos + bytes_to_read)].to_vec();
-            r.push_str(&(String::from_utf8(readable).unwrap()));
+            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + bytes_to_read)]);
             self.read_pos = (self.read_pos + bytes_to_read) % capacity;
             self.total_read_count = self.total_read_count + bytes_to_read;
         } else {
             let size_1 = capacity - self.read_pos;
-            let readable1 = self.buffer[self.read_pos..(self.read_pos + size_1)].to_vec();
-            r.push_str(&(String::from_utf8(readable1).unwrap()));
+            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_1)]);
             self.read_pos = (self.read_pos + size_1) % capacity;
 
             let size_2 = bytes_to_read - size_1;
-            let readable2 = self.buffer[self.read_pos..(self.read_pos + size_2)].to_vec();
-            r.push_str(&(String::from_utf8(readable2).unwrap()));
+            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_2)]);
             self.read_pos = (self.read_pos + size_2) % capacity;
 
             self.total_read_count = self.total_read_count + bytes_to_read;
@@ -99,29 +95,27 @@ impl ByteStream {
     }
 
     #[allow(dead_code)]
-    pub fn peek_output(&self, len: SizeT) -> String {
+    pub fn peek_output(&self, len: SizeT) -> Vec<u8> {
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
         if bytes_to_read == 0 {
-            return String::from("");
+            return Vec::new();
         }
 
-        let mut r = String::with_capacity(bytes_to_read);
+        let mut r = Vec::with_capacity(bytes_to_read);
 
         if bytes_to_read <= (capacity - self.read_pos) {
             let readable = &self.buffer[self.read_pos..(self.read_pos + bytes_to_read)];
-            r.push_str(&(String::from_utf8(Vec::from(readable)).unwrap()));
+            r.extend_from_slice(readable);
         } else {
             let mut read_pos = self.read_pos;
 
             let size_1 = capacity - read_pos;
-            let readable1 = &self.buffer[read_pos..(read_pos + size_1)];
-            r.push_str(&(String::from_utf8(Vec::from(readable1)).unwrap()));
+            r.extend_from_slice(&self.buffer[read_pos..(read_pos + size_1)]);
             read_pos = (read_pos + size_1) % capacity;
 
             let size_2 = bytes_to_read - size_1;
-            let readable2 = &self.buffer[read_pos..(read_pos + size_2)];
-            r.push_str(&(String::from_utf8(Vec::from(readable2)).unwrap()));
+            r.extend_from_slice(&self.buffer[read_pos..(read_pos + size_2)]);
         }
 
         r

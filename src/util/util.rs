@@ -2,7 +2,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 pub fn system_call(attempt: &str, return_value: i32, errno_mask: i32) -> i32 {
-    // let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
     let d = std::io::Error::last_os_error();
     let errno = d.raw_os_error().unwrap_or(0);
     if return_value >= 0 || errno == errno_mask {

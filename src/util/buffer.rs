@@ -24,8 +24,6 @@ pub struct Buffer {
     starting_offset: SizeT,
 }
 impl Buffer {
-    pub const EMPTY_VEC: &'static Vec<u8> = &Vec::new();
-
     #[allow(dead_code)]
     pub fn new(_bytes: Vec<u8>) -> Buffer {
         Buffer {
@@ -43,7 +41,6 @@ impl Buffer {
         if self.storage.is_empty() {
             &self.storage[0..0]
         } else {
-            // assert!(self.starting_offset <= self.storage.len());
             &self.storage[self.starting_offset..self.storage.len()]
         }
     }
@@ -54,7 +51,6 @@ impl Buffer {
             &mut self.storage[0..0]
         } else {
             let len = self.storage.len() as SizeT;
-            // assert!(self.starting_offset <= len);
             &mut self.storage[self.starting_offset..len]
         }
     }
@@ -67,11 +63,6 @@ impl Buffer {
     #[allow(dead_code)]
     pub fn size(&self) -> SizeT {
         self.str().len()
-    }
-
-    #[allow(dead_code)]
-    pub fn copy(&self) -> String {
-        String::from_utf8(self.str().to_vec()).unwrap()
     }
 
     #[allow(dead_code)]
@@ -229,7 +220,7 @@ mod tests {
 
     fn deref_mut_(b: &mut [u8]) {
         println!("before:{}", String::from_utf8_lossy(b));
-        let c = vec![49;b.len()];
+        let c = vec![49; b.len()];
         b.copy_from_slice(&c);
         println!("after:{}", String::from_utf8_lossy(b));
     }

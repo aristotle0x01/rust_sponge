@@ -40,7 +40,7 @@ impl ByteStreamTestStep for Write {
     fn execute(&self, bs: &mut ByteStream) {
         println!("  step: {}", ByteStreamAction::into(self));
 
-        let written = bs.write(&self.data);
+        let written = bs.write(&self.data.clone().into_bytes());
         match self.bytes_written {
             Some(v) => {
                 assert_eq!(v, written)
@@ -264,7 +264,7 @@ impl ByteStreamTestStep for Peek {
     fn execute(&self, bs: &mut ByteStream) {
         println!("  step: {}", ByteStreamExpectation::into(self));
         let b = bs.peek_output(self.output.len());
-        assert_eq!(b, self.output);
+        assert_eq!(b, self.output.clone().into_bytes());
     }
 }
 impl ByteStreamExpectation for Peek {

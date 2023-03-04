@@ -298,13 +298,13 @@ impl TCPTestStep for ExpectData {
                     )
                 );
             }
-            if actual_data != self.data.as_ref().unwrap().clone() {
+            if actual_data != self.data.as_ref().unwrap().clone().into_bytes() {
                 assert!(
                     false,
                     "{}",
                     format!(
                         "The TCP produced data {}, but should have produced {} bytes",
-                        actual_data,
+                        String::from_utf8_lossy(actual_data.as_slice()),
                         self.data.as_ref().unwrap()
                     )
                 );
@@ -1107,7 +1107,7 @@ impl TCPTestStep for Write {
     fn execute(&mut self, h: &mut TCPTestHarness) {
         println!("  step: {}", TCPAction::to_string(self));
 
-        let bytes_written = h.fsm.write(&self.data);
+        let bytes_written = h.fsm.write(&self.data.clone().into_bytes());
         if self.bytes_written.is_some() && bytes_written != self.bytes_written.unwrap() {
             let s = format!(
                 "{} bytes should have been written but {} were",

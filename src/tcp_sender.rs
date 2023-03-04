@@ -116,7 +116,7 @@ impl TCPSender {
     pub fn send_empty_segment(&mut self) {
         self.segments_out
             .push_back(Arc::new(Mutex::from(TCPSender::build_segment(
-                "",
+                vec![],
                 false,
                 false,
                 WrappingInt32::wrap(self.next_abs_seq_no, &self.isn.clone()),
@@ -129,7 +129,7 @@ impl TCPSender {
         match state {
             TCPSenderStateSummary::CLOSED => {
                 let seg = Arc::new(Mutex::new(TCPSender::build_segment(
-                    "",
+                    vec![],
                     true,
                     false,
                     self.isn.clone(),
@@ -155,7 +155,7 @@ impl TCPSender {
                     }
                     let data = self.stream.read(readable);
                     let seg = Arc::new(Mutex::new(TCPSender::build_segment(
-                        data.as_str(),
+                        data,
                         false,
                         fin,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
@@ -174,7 +174,7 @@ impl TCPSender {
                     && self.next_abs_seq_no <= self.wnd_right_abs_no
                 {
                     let seg = Arc::new(Mutex::new(TCPSender::build_segment(
-                        "",
+                        vec![],
                         false,
                         true,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
@@ -243,13 +243,13 @@ impl TCPSender {
         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn)
     }
 
-    pub fn build_segment(data: &str, syn: bool, fin: bool, seqno: WrappingInt32) -> TCPSegment {
+    pub fn build_segment(data: Vec<u8>, syn: bool, fin: bool, seqno: WrappingInt32) -> TCPSegment {
         let mut header = TCPHeader::new();
         header.fin = fin;
         header.syn = syn;
         header.seqno = seqno;
 
-        let buf = Buffer::new(String::from(data).into_bytes());
+        let buf = Buffer::new(data);
 
         TCPSegment::new(header, buf)
     }

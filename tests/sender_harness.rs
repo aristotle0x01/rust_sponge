@@ -138,7 +138,9 @@ impl SenderTestStep for WriteBytes {
     fn execute(&self, sender: &mut TCPSender, _segments: &mut VecDeque<Arc<Mutex<TCPSegment>>>) {
         println!("  step: {}", SenderAction::to_string(self));
 
-        sender.stream_in_mut().write(&self.bytes);
+        sender
+            .stream_in_mut()
+            .write(&self.bytes.clone().into_bytes());
         if self.end_input {
             sender.stream_in_mut().end_input();
         }

@@ -101,7 +101,7 @@ _socat_connect () {
 }
 
 _rt_listen () {
-    echo "****_rt_listen:" "$3 -l $4:${SERVER_PORT}" "$1", "$2"
+    # echo "****_rt_listen:" "$3 -l $4:${SERVER_PORT}" "$1", "$2"
     coproc $3 -l $4 ${SERVER_PORT} >"$1" <"$2" && sleep 0.1
     set +u
     [ -z "$COPROC_PID" ] && { echo "Error in _rt_listen"; exit 1; }
@@ -109,7 +109,7 @@ _rt_listen () {
 }
 
 _rt_connect () {
-    echo "****_rt_connect:" $3 $4 ${SERVER_PORT} ">$1" "<$2"
+    # echo "****_rt_connect:" $3 $4 ${SERVER_PORT} ">$1" "<$2"
     $3 $4 ${SERVER_PORT} >"$1" <"$2" || { echo "Error in _rt_connect"; exit 1; }
 }
 
@@ -120,14 +120,14 @@ test_listen () {
 
 test_connect () {
     [ "$#" != 2 ] && { echo "bad args"; exit 1; }
-    echo "****test_connect:" "$1" "$2" "${TEST_PROG}" "${REF_HOST}"
+    # echo "****test_connect:" "$1" "$2" "${TEST_PROG}" "${REF_HOST}"
     _rt_connect "$1" "$2" "${TEST_PROG}" "${REF_HOST}"
 }
 
 ref_listen () {
     [ "$#" != 2 ] && { echo "bad args"; exit 1; }
     if [ "$IUMODE" = "u" ] || [ -z "$USE_IPV4" ] || [ "$USE_IPV4" = "n" ]; then
-        echo "****ref_listen:" "$1" "$2" "${REF_PROG}" "${REF_HOST}"
+        # echo "****ref_listen:" "$1" "$2" "${REF_PROG}" "${REF_HOST}"
         _rt_listen "$1" "$2" "${REF_PROG}" "${REF_HOST}"
     else
         _socat_listen "$1" "$2"
@@ -159,7 +159,7 @@ make_test_file () {
 
 exit_cleanup () {
     set +u
-    rm -f "${TEST_IN_FILE}" "${TEST_OUT_FILE}" "${TEST_OUT2_FILE}"
+    # rm -f "${TEST_IN_FILE}" "${TEST_OUT_FILE}" "${TEST_OUT2_FILE}"
     [ ! -z "$COPROC_PID" ] && kill ${COPROC_PID}
 }
 
@@ -182,28 +182,29 @@ if [ "$IUMODE" = "i" ]; then
     TEST_HOST=${TUN_IP_PREFIX}.144.9
     if [ -z "$USE_IPV4" ]; then
         REF_HOST=${TUN_IP_PREFIX}.145.9
-        REF_PROG="./examples/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun145 -a ${REF_HOST}"
-        TEST_PROG="./examples/tcp_ipv4 ${RTTO} ${WINSIZE} -d tun144 -a ${TEST_HOST}"
+        REF_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun145 -a ${REF_HOST}"
+        TEST_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} -d tun144 -a ${TEST_HOST}"
     else
-        REF_PROG="./examples/tcp_native"
-        TEST_PROG="./examples/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun144 -a ${TEST_HOST}"
+        REF_PROG="./target/debug/tcp_native"
+        TEST_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun144 -a ${TEST_HOST}"
     fi
 else
     # UDP mode
-    echo "****./examples/tcp_udp:" ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}
-    REF_PROG="./examples/tcp_udp ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}"
-    TEST_PROG="./examples/tcp_udp ${RTTO} ${WINSIZE}"
+    # echo "****./target/debug/tcp_udp:" ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}
+    REF_PROG="./target/debug/tcp_udp ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}"
+    TEST_PROG="./target/debug/tcp_udp ${RTTO} ${WINSIZE}"
 fi
 
 TEST_OUT_FILE=$(mktemp)
 TEST_IN_FILE=$(mktemp)
+# TEST_IN_FILE="/tmp/mytmp"
 make_test_file "${TEST_IN_FILE}" "${DATASIZE}"
 HASH_IN=$(sha256sum ${TEST_IN_FILE} | cut -d \  -f 1)
 HASH_OUT2=
 case "$RSDMODE" in
     S)  # test sending
         if [ "$CSMODE" = "c" ]; then
-            echo "****test sending:" "${TEST_OUT_FILE}" "${TEST_IN_FILE}"
+            # echo "****test sending:" "${TEST_OUT_FILE}" "${TEST_IN_FILE}"
             ref_listen "${TEST_OUT_FILE}" /dev/null
             test_connect /dev/null "${TEST_IN_FILE}"
         else
@@ -240,6 +241,7 @@ fi
 HASH_OUT=$(hash_file ${TEST_OUT_FILE})
 if [ ! -z "${HASH_OUT2}" ] && [ "${HASH_OUT}" != "${HASH_OUT2}" ] || [ "${HASH_IN}" != "${HASH_OUT}" ]; then
     echo ERROR: "$HASH_IN" neq "$HASH_OUT" or "$HASH_OUT2"
+    colordiff -y <(xxd ${TEST_IN_FILE}) <(xxd ${TEST_OUT_FILE})
     exit 1
 fi
 exit 0

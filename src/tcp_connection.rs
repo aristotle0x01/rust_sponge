@@ -52,7 +52,7 @@ impl TCPConnection {
     }
 
     #[allow(dead_code)]
-    pub fn write(&mut self, data: &String) -> SizeT {
+    pub fn write(&mut self, data: &[u8]) -> SizeT {
         let written = self.sender.stream_in_mut().write(data);
         self.sender.fill_window();
 
@@ -88,7 +88,7 @@ impl TCPConnection {
     pub fn end_input_stream(&mut self) {
         self.sender.stream_in_mut().end_input();
         self.sender.fill_window();
-        self.write(&String::new());
+        self.write(vec![0u8; 0].as_slice());
     }
 
     #[allow(dead_code)]
@@ -133,7 +133,7 @@ impl TCPConnection {
         self.receiver.segment_received(seg);
 
         if seg.header().syn && 0 == self.sender.next_seqno_absolute() {
-            self.write(&String::new());
+            self.write(vec![0u8; 0].as_slice());
             self.syn_sent_or_recv = true;
 
             return;
@@ -159,12 +159,12 @@ impl TCPConnection {
         if seg.header().ack {
             self.sender
                 .ack_received(seg.header().ackno, seg.header().win);
-            self.write(&String::new());
+            self.write(vec![0u8; 0].as_slice());
         }
 
         if seg.length_in_sequence_space() > 0 {
             self.sender.send_empty_segment();
-            self.write(&String::new());
+            self.write(vec![0u8; 0].as_slice());
         }
 
         if self.receiver.ackno().is_some()
@@ -172,7 +172,7 @@ impl TCPConnection {
             && seg.header().seqno == (self.receiver.ackno().unwrap() - 1)
         {
             self.sender.send_empty_segment();
-            self.write(&String::new());
+            self.write(vec![0u8; 0].as_slice());
         }
 
         self.check_active();
@@ -190,7 +190,7 @@ impl TCPConnection {
         self.sender.tick(ms_since_last_tick);
         let l_new = self.sender.segments_out_mut().len() as SizeT;
         if l_new > l_old {
-            self.write(&String::new());
+            self.write(vec![0u8; 0].as_slice());
         }
 
         self.check_active();
@@ -214,7 +214,7 @@ impl TCPConnection {
         mut_seg.header_mut().rst = true;
         drop(mut_seg);
 
-        self.write(&String::new());
+        self.write(vec![0u8; 0].as_slice());
 
         self.sender.stream_in_mut().set_error();
         self.receiver.stream_out_mut().set_error();

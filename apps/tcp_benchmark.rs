@@ -4,6 +4,7 @@ use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::SizeT;
 use std::cmp::min;
+use std::io::Write;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -34,14 +35,18 @@ fn main_loop(reorder: bool) {
     //     })
     //     .collect();
     // https://users.rust-lang.org/t/fill-string-with-repeated-character/1121
-    let string_to_send: String = (0..len).map(|_| "x").collect::<String>();
+    let string_to_send = (0..len)
+        .map(|_| "x")
+        .collect::<String>()
+        .as_bytes()
+        .to_vec();
 
-    let mut bytes_to_send = Buffer::new(string_to_send.as_bytes().to_vec());
+    let mut bytes_to_send = Buffer::new(string_to_send.clone());
     x.connect();
     y.end_input_stream();
 
     let mut x_closed = false;
-    let mut string_received = String::with_capacity(len);
+    let mut string_received = Vec::with_capacity(len);
 
     let first_time = Instant::now();
 
@@ -114,13 +119,13 @@ fn loop_(
     x_closed: bool,
     reorder: bool,
     bytes_to_send: &mut Buffer,
-    string_received: &mut String,
+    mut string_received: &mut [u8],
 ) -> bool {
     let mut ret = x_closed;
 
     while bytes_to_send.size() > 0 && x.remaining_outbound_capacity() > 0 {
         let want = min(x.remaining_outbound_capacity(), bytes_to_send.size());
-        let written = x.write(&String::from_utf8(bytes_to_send.str()[0..want].to_owned()).unwrap());
+        let written = x.write(&bytes_to_send.str()[0..want]);
         assert_eq!(
             want,
             written,
@@ -140,7 +145,9 @@ fn loop_(
 
     let available_output = y.inbound_stream().buffer_size();
     if available_output > 0 {
-        string_received.push_str(y.inbound_stream_mut().read(available_output).as_str());
+        string_received
+            .write(y.inbound_stream_mut().read(available_output).as_slice())
+            .expect("write error");
     }
 
     x.tick(1000);

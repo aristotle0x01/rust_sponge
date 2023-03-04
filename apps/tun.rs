@@ -8,7 +8,7 @@ use rust_sponge::util::parser::ParseResult;
 use rust_sponge::util::tun::TunFD;
 use rust_sponge::SizeT;
 
-fn hexdump(d: &str, size: SizeT) {
+fn hexdump(d: &[u8], size: SizeT) {
     println!("hexdump:{} {}", d.len(), size);
 }
 
@@ -18,10 +18,10 @@ fn main() {
     loop {
         let buffer = tun.read(1024 * 1024 * 2);
         println!("\n\n***\n*** Got packet:\n***\n");
-        hexdump(&buffer, buffer.len());
+        hexdump(buffer.as_slice(), buffer.len());
 
         let mut ip_dgram: IPv4Datagram = IPv4Datagram::new(IPv4Header::new(), Buffer::new(vec![]));
-        if ip_dgram.parse(&Buffer::new(buffer.into_bytes()), 0) != ParseResult::NoError {
+        if ip_dgram.parse(&Buffer::new(buffer), 0) != ParseResult::NoError {
             println!("failed.\n");
             continue;
         }

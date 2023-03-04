@@ -132,12 +132,6 @@ fn main() {
     }
 
     let (c_fsm, c_filt, listen) = get_config(args.len() as i32, &args);
-    eprintln!(
-        "tcp:{}, adapter:{},{}",
-        c_fsm.clone().to_string(),
-        c_filt.clone().destination.to_string(),
-        c_filt.clone().source.to_string()
-    );
 
     let udp_sock = UDPSocket::new();
     if listen {

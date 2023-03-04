@@ -131,7 +131,6 @@ impl IPv4Header {
     }
 
     pub fn payload_length(&self) -> u16 {
-        println!("payload_length: {} {}", self.len, self.hlen);
         self.len - (4 * self.hlen) as u16
     }
 

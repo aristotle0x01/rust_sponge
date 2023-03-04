@@ -180,7 +180,7 @@ where
                     .as_socket_mut()
                     .read(l.as_ref().unwrap().remaining_outbound_capacity() as u32);
                 let len = data.len();
-                let amount_written = l.as_mut().unwrap().write(&data);
+                let amount_written = l.as_mut().unwrap().write(data.as_slice());
                 assert_eq!(
                     amount_written, len,
                     "TCPConnection::write() accepted less than advertised length"
@@ -233,7 +233,7 @@ where
                 let inbound = l.as_mut().unwrap().inbound_stream_mut();
                 let amount_to_write = min(65536, inbound.buffer_size());
                 let buffer = inbound.peek_output(amount_to_write);
-                let bytes_written = thread_data_.lock().unwrap().as_socket_mut().write(&buffer, false);
+                let bytes_written = thread_data_.lock().unwrap().as_socket_mut().write(buffer.as_slice(), false);
                 inbound.pop_output(bytes_written);
 
                 if inbound.eof() || inbound.error() {

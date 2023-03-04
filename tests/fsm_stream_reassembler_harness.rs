@@ -31,7 +31,7 @@ impl ReassemblerTestStep for BytesAvailable {
             self.bytes.len() as SizeT
         );
         let data = reassembler.stream_out_mut().read(self.bytes.len());
-        assert_eq!(data, self.bytes);
+        assert_eq!(data, self.bytes.clone().into_bytes());
     }
 }
 impl ReassemblerExpectation for BytesAvailable {
@@ -122,7 +122,11 @@ pub struct SubmitSegment {
 impl ReassemblerTestStep for SubmitSegment {
     fn execute(&self, reassembler: &mut StreamReassembler) {
         println!("  step: {}", ReassemblerAction::to_string(self));
-        reassembler.push_substring(&self.data, self.index as u64, self.eof)
+        reassembler.push_substring(
+            self.data.clone().into_bytes().as_slice(),
+            self.index as u64,
+            self.eof,
+        )
     }
 }
 impl ReassemblerAction for SubmitSegment {

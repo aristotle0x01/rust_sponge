@@ -124,9 +124,8 @@ impl TCPReceiver {
         }
 
         if seg.payload().size() > 0 || _fin {
-            // todo: copied?
             self.reassembler
-                .push_substring(&seg.payload().copy(), stream_index, _fin);
+                .push_substring(seg.payload().str(), stream_index, _fin);
         }
     }
 

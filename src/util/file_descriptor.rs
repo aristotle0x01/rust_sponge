@@ -74,11 +74,11 @@ impl FileDescriptor {
     }
 
     #[allow(dead_code)]
-    pub fn read(&mut self, _limit: u32) -> String {
-        let mut s: Vec<u8> = Vec::with_capacity(_limit as usize);
-        self.read_into(&mut s, _limit);
+    pub fn read(&mut self, _limit: u32) -> Vec<u8> {
+        let mut v: Vec<u8> = Vec::with_capacity(_limit as usize);
+        self.read_into(&mut v, _limit);
 
-        String::from_utf8_lossy(&mut s).to_string()
+        v
     }
 
     #[allow(dead_code)]
@@ -113,7 +113,7 @@ impl FileDescriptor {
     }
 
     #[allow(dead_code)]
-    pub fn write(&mut self, _buf: &String, _write_all: bool) -> SizeT {
+    pub fn write(&mut self, _buf: &[u8], _write_all: bool) -> SizeT {
         let mut total_bytes_written = 0;
 
         let mut first = true;
@@ -229,11 +229,11 @@ pub trait AsFileDescriptorMut: AsFileDescriptor {
         self.as_file_descriptor_mut().register_write();
     }
 
-    fn read(&mut self, _limit: u32) -> String {
+    fn read(&mut self, _limit: u32) -> Vec<u8> {
         self.as_file_descriptor_mut().read(_limit)
     }
 
-    fn write(&mut self, _buf: &String, _write_all: bool) -> SizeT {
+    fn write(&mut self, _buf: &[u8], _write_all: bool) -> SizeT {
         self.as_file_descriptor_mut().write(_buf, _write_all)
     }
 

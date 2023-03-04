@@ -227,9 +227,15 @@ impl ReceiverTestStep for ExpectBytes {
 
         let s1 = format!(
             "the TCPReceiver assembled \"{}\", but was expected to assemble \"{}\".",
-            bytes, self.bytes
+            String::from_utf8_lossy(bytes.as_slice()),
+            self.bytes
         );
-        assert_eq!(bytes, self.bytes, "{}", s1);
+        assert_eq!(
+            String::from_utf8_lossy(bytes.as_slice()),
+            self.bytes,
+            "{}",
+            s1
+        );
     }
 }
 impl ReceiverExpectation for ExpectBytes {

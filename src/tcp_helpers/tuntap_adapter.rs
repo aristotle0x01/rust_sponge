@@ -36,7 +36,7 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverTunFdAdapter {
     fn read_adp(&mut self) -> Option<TCPSegment> {
         let mut ip_dgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(vec![]));
         let t = self.tun.read(u32::MAX);
-        if ip_dgram.parse(&Buffer::from(t), 0) != ParseResult::NoError {
+        if ip_dgram.parse(&Buffer::new(t), 0) != ParseResult::NoError {
             None
         } else {
             self.ip_adapter.unwrap_tcp_in_ip(&ip_dgram)
@@ -45,7 +45,7 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverTunFdAdapter {
 
     fn write_adp(&mut self, seg: &mut TCPSegment) {
         self.tun.write(
-            &String::from_utf8_lossy(self.ip_adapter.wrap_tcp_in_ip(seg).serialize().as_slice()).to_string(),
+            self.ip_adapter.wrap_tcp_in_ip(seg).serialize().as_slice(),
             true,
         );
     }

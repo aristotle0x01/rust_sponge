@@ -69,8 +69,8 @@ fn main2() {
 
         let mut acc = listening_socket.accept();
         let ree = acc.read(100);
-        println!("read: {}bytes, {}", ree.len(), ree);
-        acc.write(&"hi, i will close!".to_string(), true);
+        println!("read: {}bytes", ree.len());
+        acc.write(b"hi, i will close!", true);
         acc.close();
     }
     listening_socket.close();

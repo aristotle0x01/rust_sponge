@@ -38,13 +38,17 @@ fn fsm_stream_reassembler_many() {
 
             for (off, sz) in seq_size {
                 let dd = &d[off..(off + sz)];
-                buf.push_substring(&dd.to_string(), off as u64, (off + sz) == offset);
+                buf.push_substring(
+                    &dd.to_string().into_bytes(),
+                    off as u64,
+                    (off + sz) == offset,
+                );
             }
 
             let len = buf.stream_out().buffer_size();
             let result = buf.stream_out_mut().read(len);
             assert_eq!(buf.stream_out().bytes_written(), offset);
-            assert_eq!(result, d);
+            assert_eq!(result, d.into_bytes());
         }
     }
 
@@ -60,22 +64,30 @@ fn fsm_stream_reassembler_many() {
                 })
                 .collect();
 
-            buf.push_substring(&d, 0, false);
+            buf.push_substring(&d.clone().into_bytes(), 0, false);
             let d_sub = &d[10..];
-            buf.push_substring(&d_sub.to_string(), (size + 10) as u64, false);
+            buf.push_substring(&d_sub.to_string().into_bytes(), (size + 10) as u64, false);
 
             let len1 = buf.stream_out().buffer_size();
             let res1 = buf.stream_out_mut().read(len1);
             assert_eq!(buf.stream_out().bytes_written(), size);
-            assert_eq!(&res1[0..res1.len()], &d[0..res1.len()]);
+            assert_eq!(&res1[0..res1.len()], &d.clone().into_bytes()[0..res1.len()]);
 
-            buf.push_substring(&d[0..7].to_string(), size as u64, false);
-            buf.push_substring(&d[7..8].to_string(), (size + 7) as u64, true);
+            buf.push_substring(
+                &d.clone()[0..7].to_string().into_bytes(),
+                size as u64,
+                false,
+            );
+            buf.push_substring(
+                &d.clone()[7..8].to_string().into_bytes(),
+                (size + 7) as u64,
+                true,
+            );
 
             let len2 = buf.stream_out().buffer_size();
             let res2 = buf.stream_out_mut().read(len2);
             assert_eq!(buf.stream_out().bytes_written(), size + 8);
-            assert_eq!(&res2[0..res2.len()], &d[0..res2.len()]);
+            assert_eq!(&res2[0..res2.len()], &d.into_bytes()[0..res2.len()]);
         }
     }
 
@@ -90,16 +102,20 @@ fn fsm_stream_reassembler_many() {
             })
             .collect();
 
-        buf.push_substring(&d, 0, false);
+        buf.push_substring(&d.clone().into_bytes(), 0, false);
         let d_sub = &d[10..];
-        buf.push_substring(&d_sub.to_string(), (size + 10) as u64, false);
+        buf.push_substring(&d_sub.to_string().into_bytes(), (size + 10) as u64, false);
 
         let len1 = buf.stream_out().buffer_size();
         let res1 = buf.stream_out_mut().read(len1);
         assert_eq!(buf.stream_out().bytes_written(), size);
-        assert_eq!(&res1[0..res1.len()], &d[0..res1.len()]);
+        assert_eq!(&res1[0..res1.len()], &d.clone().into_bytes()[0..res1.len()]);
 
-        buf.push_substring(&d[0..15].to_string(), size as u64, true);
+        buf.push_substring(
+            &d.clone()[0..15].to_string().into_bytes(),
+            size as u64,
+            true,
+        );
 
         let len2 = buf.stream_out().buffer_size();
         let res2 = buf.stream_out_mut().read(len2);
@@ -107,6 +123,6 @@ fn fsm_stream_reassembler_many() {
             !(buf.stream_out().bytes_written() != 2 * size
                 && buf.stream_out().bytes_written() != (size + 15))
         );
-        assert_eq!(&res2[0..res2.len()], &d[0..res2.len()]);
+        assert_eq!(&res2[0..res2.len()], &d.into_bytes()[0..res2.len()]);
     }
 }

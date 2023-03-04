@@ -39,12 +39,16 @@ fn fsm_stream_reassembler_win() {
 
         for (off, sz) in seq_size {
             let dd = &d[off..(off + sz)];
-            buf.push_substring(&dd.to_string(), off as u64, (off + sz) == offset);
+            buf.push_substring(
+                &dd.to_string().into_bytes(),
+                off as u64,
+                (off + sz) == offset,
+            );
         }
 
         let len = buf.stream_out().buffer_size();
         let result = buf.stream_out_mut().read(len);
         assert_eq!(buf.stream_out().bytes_written(), offset);
-        assert_eq!(result, d);
+        assert_eq!(result, d.into_bytes());
     }
 }
