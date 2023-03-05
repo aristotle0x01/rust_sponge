@@ -20,8 +20,8 @@ fn main() {
         println!("\n\n***\n*** Got packet:\n***\n");
         hexdump(buffer.as_slice(), buffer.len());
 
-        let mut ip_dgram: IPv4Datagram = IPv4Datagram::new(IPv4Header::new(), Buffer::new(vec![]));
-        if ip_dgram.parse(&Buffer::new(buffer), 0) != ParseResult::NoError {
+        let mut ip_dgram: IPv4Datagram = IPv4Datagram::new(IPv4Header::new(), Buffer::new(buffer));
+        if ip_dgram.parse(0) != ParseResult::NoError {
             println!("failed.\n");
             continue;
         }
@@ -39,13 +39,13 @@ fn main() {
 
         println!("\nAttempting to parse as a TCP segment... ");
 
-        let mut tcp_seg: TCPSegment = TCPSegment::new(TCPHeader::new(), Buffer::new(vec![]));
-        if tcp_seg.parse(ip_dgram.payload(), ip_dgram.header().pseudo_cksum())
-            != ParseResult::NoError
-        {
+        let pseudo_cksum = ip_dgram.header().pseudo_cksum();
+        let ret = TCPSegment::parse_new(ip_dgram.payload, pseudo_cksum);
+        if ret.is_err() {
             println!("failed.");
             continue;
         }
+        let mut tcp_seg = ret.ok().unwrap();
 
         println!(
             "success! payload len={}, TCP header contents:",

@@ -229,6 +229,11 @@ impl TCPSender {
     }
 
     #[allow(dead_code)]
+    pub fn segments_out(&self) -> &VecDeque<Arc<Mutex<TCPSegment>>> {
+        &self.segments_out
+    }
+
+    #[allow(dead_code)]
     pub fn segments_out_mut(&mut self) -> &mut VecDeque<Arc<Mutex<TCPSegment>>> {
         &mut self.segments_out
     }
@@ -243,14 +248,12 @@ impl TCPSender {
         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn)
     }
 
-    pub fn build_segment(data: Vec<u8>, syn: bool, fin: bool, seqno: WrappingInt32) -> TCPSegment {
+    fn build_segment(data: Vec<u8>, syn: bool, fin: bool, _seq_no: WrappingInt32) -> TCPSegment {
         let mut header = TCPHeader::new();
         header.fin = fin;
         header.syn = syn;
-        header.seqno = seqno;
+        header.seqno = _seq_no;
 
-        let buf = Buffer::new(data);
-
-        TCPSegment::new(header, buf)
+        TCPSegment::new(header, Buffer::new(data))
     }
 }

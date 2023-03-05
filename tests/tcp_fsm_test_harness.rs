@@ -205,7 +205,7 @@ impl TestFdAdapter {
     pub fn write_seg(&mut self, seg: &mut TCPSegment) {
         self.config_segment(seg);
 
-        let mut s = seg.serialize_u8(0);
+        let mut s = seg.serialize(0);
         self.test_fd.write_u8(&mut s);
     }
 
@@ -400,17 +400,15 @@ impl TCPExpectation for ExpectSegment {
             assert!(false, "{}", self.violated_verb("existed"));
         }
 
-        let mut seg = TCPSegment::new(TCPHeader::new(), Buffer::new(vec![]));
         let bytes = harness.flt.read();
-        let ret = seg.parse_u8(&bytes, 0);
-        if ParseResult::NoError != ret {
-            assert!(
-                false,
-                "{} with result {:?}",
-                self.violated_verb("was parsable"),
-                ret
-            );
-        }
+        let ret = TCPSegment::parse_new(Buffer::from(bytes), 0);
+        assert!(
+            ret.is_ok(),
+            "{} with result {:?}",
+            self.violated_verb("was parsable"),
+            ret.err().unwrap()
+        );
+        let seg: TCPSegment = ret.ok().unwrap();
 
         if self.ack.is_some() && seg.header().ack != self.ack.unwrap() {
             assert!(

@@ -1,9 +1,7 @@
 use crate::tcp_helpers::fd_adapter::FdAdapterBase;
 use crate::tcp_helpers::ipv4_header::IPv4Header;
-use crate::tcp_helpers::tcp_header::TCPHeader;
 use crate::tcp_helpers::tcp_segment::TCPSegment;
 use crate::util::buffer::Buffer;
-use crate::util::parser::ParseResult;
 use crate::{InternetDatagram, SizeT};
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -20,7 +18,7 @@ impl TCPOverIPv4Adapter {
     }
 
     #[allow(dead_code)]
-    pub fn unwrap_tcp_in_ip(&mut self, ip_dgram: &InternetDatagram) -> Option<TCPSegment> {
+    pub fn unwrap_tcp_in_ip(&mut self, ip_dgram: InternetDatagram) -> Option<TCPSegment> {
         let c_s_ip: u32 = u32::from(self.fd_adapter_base.config().source.ip().clone());
         if !self.fd_adapter_base.listening() && ip_dgram.header().dst != c_s_ip {
             return None;
@@ -35,11 +33,16 @@ impl TCPOverIPv4Adapter {
             return None;
         }
 
-        let mut tcp_seg = TCPSegment::new(TCPHeader::new(), Buffer::new(vec![]));
-        let r = tcp_seg.parse(ip_dgram.payload(), ip_dgram.header().pseudo_cksum());
-        if r != ParseResult::NoError {
+        let pseudo_cksum = ip_dgram.header().pseudo_cksum();
+        let ip_dgram_dst = ip_dgram.header().dst;
+        let ip_dgram_src = ip_dgram.header().src;
+        let payload_ = ip_dgram.payload;
+
+        let ret = TCPSegment::parse_new(payload_, pseudo_cksum);
+        if ret.is_err() {
             return None;
         }
+        let tcp_seg = ret.ok().unwrap();
 
         if tcp_seg.header().dport != self.fd_adapter_base.config().source.port() {
             return None;
@@ -48,11 +51,11 @@ impl TCPOverIPv4Adapter {
         if self.fd_adapter_base.listening() {
             if tcp_seg.header().syn && !tcp_seg.header().rst {
                 self.fd_adapter_base.config_mut().source = SocketAddrV4::new(
-                    Ipv4Addr::from(ip_dgram.header().dst),
+                    Ipv4Addr::from(ip_dgram_dst),
                     self.fd_adapter_base.config().source.port(),
                 );
                 self.fd_adapter_base.config_mut().destination = SocketAddrV4::new(
-                    Ipv4Addr::from(ip_dgram.header().src),
+                    Ipv4Addr::from(ip_dgram_src),
                     tcp_seg.header().sport,
                 );
                 self.fd_adapter_base.set_listening(false);
@@ -80,6 +83,6 @@ impl TCPOverIPv4Adapter {
             ((header.hlen * 4 + seg.header().doff * 4) as SizeT + seg.payload().size()) as u16;
 
         let check_sum = header.pseudo_cksum();
-        InternetDatagram::new(header, Buffer::new(seg.serialize_u8(check_sum)))
+        InternetDatagram::new(header, Buffer::new(seg.serialize(check_sum)))
     }
 }

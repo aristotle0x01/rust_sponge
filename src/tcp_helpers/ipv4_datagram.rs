@@ -7,7 +7,7 @@ use crate::SizeT;
 #[derive(Debug)]
 pub struct IPv4Datagram {
     header: IPv4Header,
-    payload: Buffer,
+    pub payload: Buffer,
 }
 impl IPv4Datagram {
     #[allow(dead_code)]
@@ -18,16 +18,18 @@ impl IPv4Datagram {
         }
     }
 
-    pub fn parse(&mut self, _buffer: &Buffer, _datagram_layer_checksum: u32) -> ParseResult {
-        let mut p = NetParser::new(_buffer.clone());
+    pub fn parse(&mut self, _datagram_layer_checksum: u32) -> ParseResult {
+        let mut p = NetParser::new(&mut self.payload);
         self.header.parse(&mut p);
-        self.payload = p.buffer().clone();
+
+        let err = p.get_error();
+        drop(p);
 
         if self.payload.size() != self.header.payload_length() as usize {
             return ParseResult::PacketTooShort;
         }
 
-        return p.get_error();
+        err
     }
 
     #[allow(dead_code)]
@@ -65,6 +67,12 @@ impl IPv4Datagram {
     #[allow(dead_code)]
     pub fn payload_mut(&mut self) -> &mut Buffer {
         &mut self.payload
+    }
+
+    // partial move out a field
+    #[allow(dead_code)]
+    fn swap(&mut self) -> Buffer {
+        std::mem::replace(&mut self.payload, Buffer::new(vec![]))
     }
 }
 impl Clone for IPv4Datagram {

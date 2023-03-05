@@ -43,7 +43,7 @@ impl IPv4Header {
         }
     }
 
-    pub fn parse(&mut self, p: &mut NetParser) -> ParseResult {
+    pub fn parse(&mut self, p: &mut NetParser<'_>) -> ParseResult {
         let original_serialized_version = p.buffer().clone();
 
         let data_size = p.buffer().size();

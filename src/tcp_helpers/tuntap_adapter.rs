@@ -34,12 +34,12 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverTunFdAdapter {
     }
 
     fn read_adp(&mut self) -> Option<TCPSegment> {
-        let mut ip_dgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(vec![]));
         let t = self.tun.read(u32::MAX);
-        if ip_dgram.parse(&Buffer::new(t), 0) != ParseResult::NoError {
+        let mut ip_dgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(t));
+        if ip_dgram.parse(0) != ParseResult::NoError {
             None
         } else {
-            self.ip_adapter.unwrap_tcp_in_ip(&ip_dgram)
+            self.ip_adapter.unwrap_tcp_in_ip(ip_dgram)
         }
     }
 

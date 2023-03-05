@@ -25,13 +25,13 @@ pub fn as_string(r: ParseResult) -> String {
 }
 
 #[derive(Debug)]
-pub struct NetParser {
-    buffer: Buffer,
+pub struct NetParser<'a> {
+    buffer: &'a mut Buffer,
     error: ParseResult,
 }
-impl NetParser {
+impl NetParser<'_> {
     #[allow(dead_code)]
-    pub fn new(_buffer: Buffer) -> NetParser {
+    pub fn new(_buffer: &mut Buffer) -> NetParser<'_> {
         NetParser {
             buffer: _buffer,
             error: ParseResult::NoError,

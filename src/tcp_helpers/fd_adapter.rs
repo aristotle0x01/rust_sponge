@@ -1,9 +1,7 @@
 use crate::tcp_helpers::tcp_config::FdAdapterConfig;
-use crate::tcp_helpers::tcp_header::TCPHeader;
 use crate::tcp_helpers::tcp_segment::TCPSegment;
 use crate::util::buffer::Buffer;
 use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
-use crate::util::parser::ParseResult;
 use crate::util::socket::UDPSocket;
 use crate::SizeT;
 use std::net::{Ipv4Addr, SocketAddrV4};
@@ -116,24 +114,24 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
     }
 
     fn read_adp(&mut self) -> Option<TCPSegment> {
-        let datagram = self.sock.recv(65536);
+        let (source_address, payload) = self.sock.recv(65536);
 
         let b =
-            FdAdapterConfig::eq_to_sockaddr(&datagram.source_address, &self.config().destination);
+            FdAdapterConfig::eq_to_sockaddr(&source_address, &self.config().destination);
         if !self.listening() && !b {
             return None;
         }
 
-        let mut seg = TCPSegment::new(TCPHeader::new(), Buffer::new(Vec::new()));
-        let pr = seg.parse_u8(&datagram.payload, 0);
-        if pr != ParseResult::NoError {
+        let ret = TCPSegment::parse_new(Buffer::new(payload), 0);
+        if ret.is_err() {
             return None;
         }
+        let seg = ret.ok().unwrap();
 
         if self.listening() {
             if seg.header().syn && !seg.header().rst {
                 self.config_mut().destination =
-                    FdAdapterConfig::from_sockaddr(&datagram.source_address);
+                    FdAdapterConfig::from_sockaddr(&source_address);
                 self.set_listening(false);
             } else {
                 return None;
@@ -149,7 +147,7 @@ impl AsFdAdapterBaseMut for TCPOverUDPSocketAdapter {
 
         self.sock.sendto(
             &self.fd_adapter_base.cfg.destination,
-            &mut seg.serialize_u8(0),
+            &mut seg.serialize(0),
         );
     }
 }

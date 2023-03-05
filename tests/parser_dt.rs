@@ -25,7 +25,8 @@ fn t_parser_dt() {
     let out4: u32;
     let out2: u16;
     {
-        let mut p = NetParser::new(Buffer::new(buffer)); // NOTE: starting at offset 0
+        let mut b = Buffer::new(buffer);
+        let mut p = NetParser::new(&mut b); // NOTE: starting at offset 0
         out0 = p.u8(); // buffer[0], which we manually set to 0x32 above
         out1 = p.u32(); // parse out VAL1
         out2 = p.u16(); // VAL2

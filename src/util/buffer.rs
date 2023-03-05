@@ -46,22 +46,17 @@ impl Buffer {
     }
 
     #[allow(dead_code)]
-    pub fn str_mut(&mut self) -> &mut [u8] {
-        if self.storage.is_empty() {
-            &mut self.storage[0..0]
-        } else {
-            let len = self.storage.len() as SizeT;
-            &mut self.storage[self.starting_offset..len]
-        }
-    }
-
-    #[allow(dead_code)]
     pub fn at(&self, n: SizeT) -> u8 {
         *self.str().get(n).unwrap()
     }
 
     #[allow(dead_code)]
     pub fn size(&self) -> SizeT {
+        self.str().len()
+    }
+
+    #[allow(dead_code)]
+    pub fn len(&self) -> SizeT {
         self.str().len()
     }
 
@@ -89,6 +84,14 @@ impl From<String> for Buffer {
     fn from(s: String) -> Self {
         Buffer {
             storage: Vec::from(s),
+            starting_offset: 0,
+        }
+    }
+}
+impl From<Vec<u8>> for Buffer {
+    fn from(v: Vec<u8>) -> Self {
+        Buffer {
+            storage: v,
             starting_offset: 0,
         }
     }

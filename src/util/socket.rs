@@ -187,7 +187,7 @@ impl UDPSocket {
     }
 
     #[allow(dead_code)]
-    pub fn recv(&mut self, _mtu: SizeT) -> ReceivedDatagram {
+    pub fn recv(&mut self, _mtu: SizeT) -> (sockaddr, Vec<u8>) {
         let mut dg = ReceivedDatagram {
             source_address: unsafe { mem::zeroed() },
             payload: vec![],
@@ -195,7 +195,7 @@ impl UDPSocket {
 
         self.recv_into(&mut dg, _mtu);
 
-        dg
+        (dg.source_address, dg.payload)
     }
 
     #[allow(dead_code)]
@@ -227,33 +227,6 @@ impl UDPSocket {
         self.register_read();
 
         datagram.payload.resize(rev_len as usize, 0);
-    }
-
-    #[allow(dead_code)]
-    pub fn sendto2(&mut self, _destination: &mut sockaddr, _payload: &mut Vec<u8>) {
-        let vecs = [libc::iovec {
-            iov_base: _payload.as_mut_ptr() as *mut c_void,
-            iov_len: _payload.len(),
-        }; 1];
-        let msg = libc::msghdr {
-            msg_name: _destination as *mut _ as *mut c_void,
-            msg_namelen: size_of_val(_destination) as socklen_t,
-            msg_iov: vecs.as_ptr() as *mut libc::iovec,
-            msg_iovlen: (vecs.len() as c_int) as usize,
-            msg_control: null_mut(),
-            msg_controllen: 0,
-            msg_flags: 0,
-        };
-
-        let sent = unsafe { libc::sendmsg(self.fd_num(), &msg, 0) };
-        system_call("sendmsg", sent as i32, 0);
-        assert_eq!(
-            sent,
-            _payload.len() as isize,
-            "datagram payload too big for sendmsg()"
-        );
-
-        self.register_write();
     }
 
     #[allow(dead_code)]

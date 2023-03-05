@@ -1,5 +1,5 @@
 use crate::tcp_helpers::tcp_header::TCPHeader;
-use crate::util::buffer::{Buffer, BufferList};
+use crate::util::buffer::Buffer;
 use crate::util::parser::{NetParser, ParseResult};
 use crate::util::util::InternetChecksum;
 use crate::SizeT;
@@ -18,67 +18,46 @@ impl TCPSegment {
         }
     }
 
-    pub fn parse(&mut self, _buffer: &Buffer, _datagram_layer_checksum: u32) -> ParseResult {
-        let mut check = InternetChecksum::new(_datagram_layer_checksum);
-        check.add(_buffer.str());
-        if check.value() != 0 {
-            return ParseResult::BadChecksum;
+    #[allow(dead_code)]
+    pub fn parse_new(bytes: Buffer, checksum: u32) -> Result<TCPSegment, ParseResult> {
+        let mut t =
+        TCPSegment {
+            header: TCPHeader::new(),
+            payload: bytes,
+        };
+        let r = t.parse(checksum);
+        match r {
+            ParseResult::NoError => Ok(t),
+            _ => Err(r)
         }
-
-        let mut p = NetParser::new(Buffer::new(_buffer.str().to_vec()));
-        self.header.parse(&mut p);
-        // todo: copied, not the original shared ref way
-        // self.payload = p.buffer(); // c++
-        self.payload = p.buffer().clone();
-
-        return p.get_error();
     }
 
-    pub fn parse_u8(&mut self, _buffer: &Vec<u8>, _datagram_layer_checksum: u32) -> ParseResult {
+    pub fn parse(&mut self, _datagram_layer_checksum: u32) -> ParseResult {
+        assert!(self.payload.len() > 0);
+
         let mut check = InternetChecksum::new(_datagram_layer_checksum);
-        check.add(_buffer.as_slice());
+        check.add(self.payload.str());
         if check.value() != 0 {
             return ParseResult::BadChecksum;
         }
 
-        let mut p = NetParser::new(Buffer::new(_buffer.to_vec()));
+        let mut p = NetParser::new(&mut self.payload);
         self.header.parse(&mut p);
-        // todo: copied, not the original shared ref way
-        // self.payload = p.buffer(); // c++
-        self.payload = p.buffer().clone();
 
         return p.get_error();
     }
 
     #[allow(dead_code)]
-    pub fn serialize(&mut self, _datagram_layer_checksum: u32) -> BufferList {
-        let header_out = &mut self.header;
-        header_out.cksum = 0;
-
-        // calculate checksum -- taken over entire segment
-        let mut check = InternetChecksum::new(_datagram_layer_checksum);
-        let serialized = header_out.serialize();
-        check.add(serialized.as_bytes());
-        check.add(self.payload.str());
-        header_out.cksum = check.value();
-
-        let mut ret = BufferList::new(Buffer::new(serialized.into_bytes()));
-        ret.append(&self.payload.clone().into());
-
-        ret
-    }
-
-    #[allow(dead_code)]
-    pub fn serialize_u8(&mut self, _datagram_layer_checksum: u32) -> Vec<u8> {
+    pub fn serialize(&mut self, _datagram_layer_checksum: u32) -> Vec<u8> {
         let header_out = &mut self.header;
 
         // calculate checksum -- taken over entire segment
         let mut check = InternetChecksum::new(_datagram_layer_checksum);
-        check.add(header_out.serialize_u8().as_ref());
+        check.add(header_out.serialize().as_ref());
         check.add(self.payload.str());
         header_out.cksum = check.value();
 
-        [&header_out.serialize_u8()[..], self.payload.str()].concat()
+        [&header_out.serialize()[..], self.payload.str()].concat()
     }
 
     #[allow(dead_code)]
