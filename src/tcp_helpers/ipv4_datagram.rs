@@ -75,11 +75,3 @@ impl IPv4Datagram {
         std::mem::replace(&mut self.payload, Buffer::new(vec![]))
     }
 }
-impl Clone for IPv4Datagram {
-    fn clone(&self) -> IPv4Datagram {
-        IPv4Datagram {
-            header: self.header.clone(),
-            payload: self.payload.clone(),
-        }
-    }
-}

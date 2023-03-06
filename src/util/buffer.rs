@@ -20,6 +20,7 @@ use std::sync::Arc;
 // https://stackoverflow.com/questions/66726259/returning-a-mutable-reference-to-a-value-behind-arc-and-mutex
 #[derive(Debug)]
 pub struct Buffer {
+    str_len: SizeT,
     storage: Vec<u8>,
     starting_offset: SizeT,
 }
@@ -27,6 +28,7 @@ impl Buffer {
     #[allow(dead_code)]
     pub fn new(_bytes: Vec<u8>) -> Buffer {
         Buffer {
+            str_len: _bytes.len(),
             storage: _bytes,
             starting_offset: 0,
         }
@@ -52,21 +54,23 @@ impl Buffer {
 
     #[allow(dead_code)]
     pub fn size(&self) -> SizeT {
-        self.str().len()
+        self.str_len
     }
 
     #[allow(dead_code)]
     pub fn len(&self) -> SizeT {
-        self.str().len()
+        self.str_len
     }
 
     #[allow(dead_code)]
     pub fn remove_prefix(&mut self, n: SizeT) {
-        if n > self.str().len() {
+        if n > self.str_len {
             panic!("Buffer::remove_prefix");
         }
         self.starting_offset += n;
+        self.str_len -= n;
         if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
+            self.str_len = 0;
             self.storage.clear();
             assert!(self.storage.is_empty());
         }
@@ -75,6 +79,7 @@ impl Buffer {
 impl Clone for Buffer {
     fn clone(&self) -> Buffer {
         Buffer {
+            str_len: self.str_len,
             storage: self.storage.clone(),
             starting_offset: self.starting_offset,
         }
@@ -82,15 +87,19 @@ impl Clone for Buffer {
 }
 impl From<String> for Buffer {
     fn from(s: String) -> Self {
-        Buffer {
+        let mut t = Buffer {
+            str_len: 0,
             storage: Vec::from(s),
             starting_offset: 0,
-        }
+        };
+        t.str_len = t.storage.len();
+        t
     }
 }
 impl From<Vec<u8>> for Buffer {
     fn from(v: Vec<u8>) -> Self {
         Buffer {
+            str_len: v.len(),
             storage: v,
             starting_offset: 0,
         }

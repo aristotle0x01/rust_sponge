@@ -65,3 +65,6 @@ path = "apps/tcp_benchmark.rs"
 [[example]]
 name = "bidirectional_stream_copy"
 path = "apps/bidirectional_stream_copy.rs"
+
+[rust]
+debuginfo-level = 1

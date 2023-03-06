@@ -62,7 +62,7 @@ impl TCPSegment {
 
     #[allow(dead_code)]
     pub fn length_in_sequence_space(&self) -> SizeT {
-        self.payload().str().len()
+        self.payload().len()
             + (if self.header().syn { 1 } else { 0 })
             + (if self.header().fin { 1 } else { 0 })
     }
@@ -85,13 +85,5 @@ impl TCPSegment {
     #[allow(dead_code)]
     pub fn payload_mut(&mut self) -> &mut Buffer {
         &mut self.payload
-    }
-}
-impl Clone for TCPSegment {
-    fn clone(&self) -> TCPSegment {
-        TCPSegment {
-            header: self.header.clone(),
-            payload: self.payload.clone(),
-        }
     }
 }

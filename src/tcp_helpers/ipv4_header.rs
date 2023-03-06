@@ -44,11 +44,15 @@ impl IPv4Header {
     }
 
     pub fn parse(&mut self, p: &mut NetParser<'_>) -> ParseResult {
-        let original_serialized_version = p.buffer().clone();
-
         let data_size = p.buffer().size();
         if data_size < IPv4Header::LENGTH {
             return ParseResult::PacketTooShort;
+        }
+
+        let mut check = InternetChecksum::new(0);
+        check.add(p.buffer().str());
+        if check.value() != 0 {
+            return ParseResult::BadChecksum;
         }
 
         let first_byte: u8 = p.u8();
@@ -85,12 +89,6 @@ impl IPv4Header {
         p.remove_prefix((self.hlen * 4 - IPv4Header::LENGTH as u8) as SizeT);
         if p.error() {
             return p.get_error();
-        }
-
-        let mut check = InternetChecksum::new(0);
-        check.add(original_serialized_version.str());
-        if check.value() != 0 {
-            return ParseResult::BadChecksum;
         }
 
         return ParseResult::NoError;
