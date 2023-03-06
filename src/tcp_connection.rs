@@ -163,7 +163,7 @@ impl TCPConnection {
         }
 
         if seg.length_in_sequence_space() > 0 {
-            self.sender.send_empty_segment();
+            self.sender.send_empty_segment(false);
             self.write(vec![0u8; 0].as_slice());
         }
 
@@ -171,7 +171,7 @@ impl TCPConnection {
             && seg.length_in_sequence_space() == 0
             && seg.header().seqno == (self.receiver.ackno().unwrap() - 1)
         {
-            self.sender.send_empty_segment();
+            self.sender.send_empty_segment(false);
             self.write(vec![0u8; 0].as_slice());
         }
 
@@ -208,14 +208,8 @@ impl TCPConnection {
 
     #[allow(dead_code)]
     fn send_reset(&mut self) {
-        self.sender.send_empty_segment();
-        let seg = self.sender.segments_out_mut().back_mut().unwrap();
-        let mut mut_seg = seg.lock().unwrap();
-        mut_seg.header_mut().rst = true;
-        drop(mut_seg);
-
+        self.sender.send_empty_segment(true);
         self.write(vec![0u8; 0].as_slice());
-
         self.sender.stream_in_mut().set_error();
         self.receiver.stream_out_mut().set_error();
         self.active = false;

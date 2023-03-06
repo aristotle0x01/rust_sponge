@@ -113,12 +113,13 @@ impl TCPSender {
     }
 
     #[allow(dead_code)]
-    pub fn send_empty_segment(&mut self) {
+    pub fn send_empty_segment(&mut self, rst: bool) {
         self.segments_out
             .push_back(Arc::new(Mutex::from(TCPSender::build_segment(
                 vec![],
                 false,
                 false,
+                rst,
                 WrappingInt32::wrap(self.next_abs_seq_no, &self.isn.clone()),
             ))));
     }
@@ -131,6 +132,7 @@ impl TCPSender {
                 let seg = Arc::new(Mutex::new(TCPSender::build_segment(
                     vec![],
                     true,
+                    false,
                     false,
                     self.isn.clone(),
                 )));
@@ -158,6 +160,7 @@ impl TCPSender {
                         data,
                         false,
                         fin,
+                        false,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
                     )));
                     self.segments_out.push_back(seg.clone());
@@ -177,6 +180,7 @@ impl TCPSender {
                         vec![],
                         false,
                         true,
+                        false,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
                     )));
                     self.segments_out.push_back(seg.clone());
@@ -248,10 +252,11 @@ impl TCPSender {
         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn)
     }
 
-    fn build_segment(data: Vec<u8>, syn: bool, fin: bool, _seq_no: WrappingInt32) -> TCPSegment {
+    fn build_segment(data: Vec<u8>, syn: bool, fin: bool, rst: bool, _seq_no: WrappingInt32) -> TCPSegment {
         let mut header = TCPHeader::new();
         header.fin = fin;
         header.syn = syn;
+        header.rst = rst;
         header.seqno = _seq_no;
 
         TCPSegment::new(header, Buffer::new(data))
