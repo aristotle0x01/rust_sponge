@@ -73,19 +73,18 @@ impl ByteStream {
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
 
-        let mut r = Vec::with_capacity(bytes_to_read);
-
+        let mut r = vec![0u8;bytes_to_read];
         if bytes_to_read <= (capacity - self.read_pos) {
-            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + bytes_to_read)]);
+            r.copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + bytes_to_read)]);
             self.read_pos = (self.read_pos + bytes_to_read) % capacity;
             self.total_read_count = self.total_read_count + bytes_to_read;
         } else {
             let size_1 = capacity - self.read_pos;
-            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_1)]);
+            r[0..size_1].copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_1)]);
             self.read_pos = (self.read_pos + size_1) % capacity;
 
             let size_2 = bytes_to_read - size_1;
-            r.extend_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_2)]);
+            r[size_1..bytes_to_read].copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_2)]);
             self.read_pos = (self.read_pos + size_2) % capacity;
 
             self.total_read_count = self.total_read_count + bytes_to_read;
@@ -97,26 +96,26 @@ impl ByteStream {
 
     #[allow(dead_code)]
     pub fn peek_output(&self, len: SizeT) -> Vec<u8> {
-        let capacity = self.capacity;
-        let bytes_to_read = cmp::min(self.buffer_size(), len);
-        if bytes_to_read == 0 {
-            return Vec::new();
+        if len == 0 {
+            return vec![];
         }
 
-        let mut r = Vec::with_capacity(bytes_to_read);
+        let capacity = self.capacity;
+        let bytes_to_read = cmp::min(self.buffer_size(), len);
 
+        let mut r = vec![0u8;bytes_to_read];
         if bytes_to_read <= (capacity - self.read_pos) {
             let readable = &self.buffer[self.read_pos..(self.read_pos + bytes_to_read)];
-            r.extend_from_slice(readable);
+            r.copy_from_slice(readable);
         } else {
             let mut read_pos = self.read_pos;
 
             let size_1 = capacity - read_pos;
-            r.extend_from_slice(&self.buffer[read_pos..(read_pos + size_1)]);
+            r[0..size_1].copy_from_slice(&self.buffer[read_pos..(read_pos + size_1)]);
             read_pos = (read_pos + size_1) % capacity;
 
             let size_2 = bytes_to_read - size_1;
-            r.extend_from_slice(&self.buffer[read_pos..(read_pos + size_2)]);
+            r[size_1..bytes_to_read].copy_from_slice(&self.buffer[read_pos..(read_pos + size_2)]);
         }
 
         r

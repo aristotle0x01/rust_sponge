@@ -166,17 +166,16 @@ impl StreamReassembler {
             return;
         }
 
-        let mut r = Vec::with_capacity(count);
+        let mut r = vec![0u8;count];
         let begin_index: SizeT = (self.next_stream_index % self.capacity as u64) as SizeT;
-
         if count <= (self.capacity - begin_index) {
-            r.extend_from_slice(&self.buffer[begin_index..(begin_index + count)]);
+            r.copy_from_slice(&self.buffer[begin_index..(begin_index + count)]);
         } else {
             let size_1 = self.capacity - begin_index;
-            r.extend_from_slice(&self.buffer[begin_index..(begin_index + size_1)]);
+            r[0..size_1].copy_from_slice(&self.buffer[begin_index..(begin_index + size_1)]);
 
             let size_2 = count - size_1;
-            r.extend_from_slice(&self.buffer[0..size_2]);
+            r[size_1..count].copy_from_slice(&self.buffer[0..size_2]);
         }
         self.output.write(r.as_slice());
 
