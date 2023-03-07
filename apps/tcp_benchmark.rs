@@ -12,7 +12,7 @@ use std::time::Instant;
 
 // todo: has not met the minimal performance requirement yet
 
-const len: SizeT = 1 * 1000 * 1024;
+const len: SizeT = 100 * 1024 * 1024;
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 // #[bench]
@@ -156,8 +156,8 @@ fn loop_(
     if available_output > 0 {
         string_received
             .extend_from_slice(y.inbound_stream_mut().read(available_output).as_slice());
+        eprintln!("string_received: recv {} bytes, bytes_to_send:{}, {}, {}", available_output, bytes_to_send.len(), y.inbound_stream().eof(), y.inbound_stream().bytes_written());
     }
-    eprintln!("string_received: recv {} bytes, bytes_to_send:{}, {}, {}", available_output, bytes_to_send.len(), y.inbound_stream().eof(), y.inbound_stream().bytes_written());
 
     x.tick(1000);
     y.tick(1000);

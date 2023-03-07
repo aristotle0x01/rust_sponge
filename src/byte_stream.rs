@@ -32,12 +32,12 @@ impl ByteStream {
 
     #[allow(dead_code)]
     pub fn write(&mut self, data: &[u8]) -> SizeT {
+        if data.is_empty() {
+            return 0;
+        }
+
         let capacity = self.capacity;
         let bytes_to_write = cmp::min(self.remaining_capacity(), data.len());
-        if bytes_to_write == 0 {
-            let w: SizeT = 0;
-            return w;
-        }
 
         if bytes_to_write <= (capacity - self.write_pos) {
             let writable = &data[..bytes_to_write];
@@ -66,11 +66,12 @@ impl ByteStream {
 
     #[allow(dead_code)]
     pub fn read(&mut self, len: SizeT) -> Vec<u8> {
+        if len == 0 {
+            return vec![];
+        }
+
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
-        if bytes_to_read == 0 {
-            return Vec::new();
-        }
 
         let mut r = Vec::with_capacity(bytes_to_read);
 

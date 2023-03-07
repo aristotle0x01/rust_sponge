@@ -62,6 +62,18 @@ impl TCPSender {
     #[allow(dead_code)]
     pub fn ack_received(&mut self, ackno: WrappingInt32, window_size: u16) {
         let abs_ack_no = WrappingInt32::unwrap(&ackno, &self.isn, self.check_point);
+
+        let last_abs_ack_no = WrappingInt32::unwrap(&self.last_ack_no, &self.isn, self.check_point);
+        // let last_abs_ack_no = self.wnd_left_abs_no;
+        if abs_ack_no > last_abs_ack_no {
+            self.retransmission_timeout = self.initial_retransmission_timeout;
+            self.consecutive_retransmissions = 0;
+            if !self.outstanding.is_empty() {
+                self.timer
+                    .restart(self.ms_total_tick, self.retransmission_timeout);
+            }
+        }
+
         if abs_ack_no > self.next_abs_seq_no || abs_ack_no < self.wnd_left_abs_no {
             // Impossible ackno (beyond next seqno) is ignored or repeated ack
             return;
@@ -78,17 +90,6 @@ impl TCPSender {
         }
         if self.outstanding.is_empty() {
             self.timer.stop();
-        }
-
-        let last_abs_ack_no = WrappingInt32::unwrap(&self.last_ack_no, &self.isn, self.check_point);
-        // let last_abs_ack_no = self.wnd_left_abs_no;
-        if abs_ack_no > last_abs_ack_no {
-            self.retransmission_timeout = self.initial_retransmission_timeout;
-            self.consecutive_retransmissions = 0;
-            if !self.outstanding.is_empty() {
-                self.timer
-                    .restart(self.ms_total_tick, self.retransmission_timeout);
-            }
         }
 
         // What should I do if the window size is zero? If the receiver has announced a
@@ -194,15 +195,16 @@ impl TCPSender {
     #[allow(dead_code)]
     pub fn tick(&mut self, ms_since_last_tick: SizeT) {
         self.ms_total_tick = self.ms_total_tick + ms_since_last_tick;
-
         let expired = self.timer.expire(self.ms_total_tick);
 
         if self.outstanding.is_empty() {
             self.timer.stop();
+            return;
         }
 
-        if expired && !self.outstanding.is_empty() {
+        if expired {
             let _entry = self.outstanding.iter().next().unwrap();
+            // todo: clone here
             self.segments_out.push_back(_entry.1.clone());
             if self.window_size > 0 {
                 self.retransmission_timeout = self.retransmission_timeout * 2;
