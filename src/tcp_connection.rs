@@ -7,6 +7,9 @@ use crate::tcp_sender::TCPSender;
 use crate::SizeT;
 use std::collections::VecDeque;
 
+// for current implementation, after receiving rst (causing dual byte stream set_error), yet send & recv bytes still continue
+// so using inner byte stream error() may have implications in implementation of TCPSpongeSocket
+
 #[derive(Debug)]
 pub struct TCPConnection {
     cfg: TCPConfig,

@@ -2,7 +2,6 @@ use crate::byte_stream::ByteStream;
 use crate::tcp_helpers::tcp_config::TCPConfig;
 use crate::tcp_helpers::tcp_header::TCPHeader;
 use crate::tcp_helpers::tcp_segment::TCPSegment;
-use crate::tcp_helpers::tcp_state::{TCPSenderStateSummary, TCPState};
 use crate::util::buffer::Buffer;
 use crate::util::tcp_timer::TcpTimer;
 use crate::wrapping_integers::WrappingInt32;
@@ -126,15 +125,40 @@ impl TCPSender {
 
     #[allow(dead_code)]
     pub fn fill_window(&mut self) {
-        let state = TCPState::state_summary_sender(&self);
-        match state {
-            TCPSenderStateSummary::CLOSED => {
+        // previous way of matching (let state = TCPState::state_summary_sender(&self)) when error would prevent further sending
+        if self.next_abs_seq_no == 0 {
+            let seg = TCPSender::build_segment(
+                vec![],
+                true,
+                false,
+                false,
+                self.isn.clone(),
+            );
+            let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
+            self.segments_out.push_back(seg.clone());
+            self.outstanding.insert(self.next_abs_seq_no, seg);
+            self.next_abs_seq_no = n_;
+            self.timer
+                .start(self.ms_total_tick, self.retransmission_timeout);
+        } else if self.next_abs_seq_no == self.bytes_in_flight() as u64 {
+        } else if !self.stream_in().eof() || (self.next_abs_seq_no < (self.stream_in().bytes_written() + 2) as u64) {
+            let mut fin = false;
+            while !self.stream.buffer_empty() && self.next_abs_seq_no <= self.wnd_right_abs_no {
+                let gap: SizeT = (self.wnd_right_abs_no - self.next_abs_seq_no + 1) as SizeT;
+                let vec = vec![TCPConfig::MAX_PAYLOAD_SIZE, gap, self.stream.buffer_size()];
+                let readable: SizeT = *vec.iter().min().unwrap();
+                let data = self.stream.read(readable);
+                if self.stream.eof()
+                    && (self.next_abs_seq_no + readable as u64) <= self.wnd_right_abs_no
+                {
+                    fin = true;
+                }
                 let seg = TCPSender::build_segment(
-                    vec![],
-                    true,
+                    data,
                     false,
+                    fin,
                     false,
-                    self.isn.clone(),
+                    WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
                 );
                 let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
                 self.segments_out.push_back(seg.clone());
@@ -143,52 +167,24 @@ impl TCPSender {
                 self.timer
                     .start(self.ms_total_tick, self.retransmission_timeout);
             }
-            TCPSenderStateSummary::SYN_ACKED => {
-                let mut fin = false;
-                while !self.stream.buffer_empty() && self.next_abs_seq_no <= self.wnd_right_abs_no {
-                    let gap: SizeT = (self.wnd_right_abs_no - self.next_abs_seq_no + 1) as SizeT;
-                    let vec = vec![TCPConfig::MAX_PAYLOAD_SIZE, gap, self.stream.buffer_size()];
-                    let readable: SizeT = *vec.iter().min().unwrap();
-                    let data = self.stream.read(readable);
-                    if self.stream.eof()
-                        && (self.next_abs_seq_no + readable as u64) <= self.wnd_right_abs_no
-                    {
-                        fin = true;
-                    }
-                    let seg = TCPSender::build_segment(
-                        data,
-                        false,
-                        fin,
-                        false,
-                        WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
-                    );
-                    let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
-                    self.segments_out.push_back(seg.clone());
-                    self.outstanding.insert(self.next_abs_seq_no, seg);
-                    self.next_abs_seq_no = n_;
-                    self.timer
-                        .start(self.ms_total_tick, self.retransmission_timeout);
-                }
-                if fin == false
-                    && self.stream.eof()
-                    && self.next_abs_seq_no <= self.wnd_right_abs_no
-                {
-                    let seg = TCPSender::build_segment(
-                        vec![],
-                        false,
-                        true,
-                        false,
-                        WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
-                    );
-                    let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
-                    self.segments_out.push_back(seg.clone());
-                    self.outstanding.insert(self.next_abs_seq_no, seg);
-                    self.next_abs_seq_no = n_;
-                    self.timer
-                        .start(self.ms_total_tick, self.retransmission_timeout);
-                }
+            if fin == false
+                && self.stream.eof()
+                && self.next_abs_seq_no <= self.wnd_right_abs_no
+            {
+                let seg = TCPSender::build_segment(
+                    vec![],
+                    false,
+                    true,
+                    false,
+                    WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
+                );
+                let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
+                self.segments_out.push_back(seg.clone());
+                self.outstanding.insert(self.next_abs_seq_no, seg);
+                self.next_abs_seq_no = n_;
+                self.timer
+                    .start(self.ms_total_tick, self.retransmission_timeout);
             }
-            _ => {}
         }
     }
 
