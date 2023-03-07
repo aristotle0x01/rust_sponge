@@ -12,7 +12,6 @@ use crate::SizeT;
 use libc::{SHUT_RDWR, SHUT_WR};
 use std::cmp::min;
 use std::fmt::Debug;
-use std::ops::DerefMut;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -269,9 +268,8 @@ where
                 let mut l = tcp_.lock().unwrap();
 
                 while !l.as_mut().unwrap().segments_out_mut().is_empty() {
-                    let t_ = l.as_mut().unwrap().segments_out_mut().pop_front().unwrap();
-                    let mut t_seg = t_.lock().unwrap();
-                    adapter_.lock().unwrap().write_adp(t_seg.deref_mut());
+                    let mut seg_ = l.as_mut().unwrap().segments_out_mut().pop_front().unwrap();
+                    adapter_.lock().unwrap().write_adp(&mut seg_);
                 }
             }),
             Box::new(move || {

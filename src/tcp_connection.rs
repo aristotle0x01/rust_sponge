@@ -6,14 +6,13 @@ use crate::tcp_receiver::TCPReceiver;
 use crate::tcp_sender::TCPSender;
 use crate::SizeT;
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct TCPConnection {
     cfg: TCPConfig,
     receiver: TCPReceiver,
     sender: TCPSender,
-    segments_out: VecDeque<Arc<Mutex<TCPSegment>>>,
+    segments_out: VecDeque<TCPSegment>,
     linger_after_streams_finish: bool,
     total_tick: SizeT,
     last_recv_seg_tick: SizeT,
@@ -21,6 +20,8 @@ pub struct TCPConnection {
     fin_received: bool,
     fin_sent: bool,
     syn_sent_or_recv: bool,
+    #[allow(dead_code)]
+    name: String
 }
 impl TCPConnection {
     #[allow(dead_code)]
@@ -37,6 +38,25 @@ impl TCPConnection {
             fin_received: false,
             fin_sent: false,
             syn_sent_or_recv: false,
+            name: "".to_string()
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new2(cnf: TCPConfig, _name: String) -> TCPConnection {
+        TCPConnection {
+            cfg: cnf.clone(),
+            receiver: TCPReceiver::new(cnf.recv_capacity),
+            sender: TCPSender::new(cnf.send_capacity, cnf.rt_timeout, cnf.fixed_isn),
+            segments_out: Default::default(),
+            linger_after_streams_finish: true,
+            total_tick: 0,
+            last_recv_seg_tick: 0,
+            active: true,
+            fin_received: false,
+            fin_sent: false,
+            syn_sent_or_recv: false,
+            name: _name
         }
     }
 
@@ -57,8 +77,7 @@ impl TCPConnection {
         self.sender.fill_window();
 
         while !self.sender.segments_out_mut().is_empty() {
-            let seg = self.sender.segments_out_mut().pop_front().unwrap();
-            let mut mut_seg = seg.lock().unwrap();
+            let mut mut_seg = self.sender.segments_out_mut().pop_front().unwrap();
             if self.receiver.ackno().is_some() {
                 mut_seg.header_mut().ack = true;
                 mut_seg.header_mut().ackno = self.receiver.ackno().unwrap();
@@ -68,8 +87,9 @@ impl TCPConnection {
                     mut_seg.header_mut().win = self.receiver.window_size() as u16;
                 }
             }
-            self.segments_out.push_back(seg.clone());
-            if mut_seg.header().fin {
+            let fin_ = mut_seg.header().fin;
+            self.segments_out.push_back(mut_seg);
+            if fin_ {
                 self.fin_sent = true;
             }
         }
@@ -197,7 +217,7 @@ impl TCPConnection {
     }
 
     #[allow(dead_code)]
-    pub fn segments_out_mut(&mut self) -> &mut VecDeque<Arc<Mutex<TCPSegment>>> {
+    pub fn segments_out_mut(&mut self) -> &mut VecDeque<TCPSegment> {
         &mut self.segments_out
     }
 

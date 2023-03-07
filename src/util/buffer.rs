@@ -1,6 +1,6 @@
 use crate::SizeT;
 use std::collections::VecDeque;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::Arc;
 
 // type conversion and Deref Trait
@@ -21,7 +21,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct Buffer {
     str_len: SizeT,
-    storage: Vec<u8>,
+    storage: Arc<Vec<u8>>,
     starting_offset: SizeT,
 }
 impl Buffer {
@@ -29,7 +29,7 @@ impl Buffer {
     pub fn new(_bytes: Vec<u8>) -> Buffer {
         Buffer {
             str_len: _bytes.len(),
-            storage: _bytes,
+            storage: Arc::new(_bytes),
             starting_offset: 0,
         }
     }
@@ -71,7 +71,8 @@ impl Buffer {
         self.str_len -= n;
         if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
             self.str_len = 0;
-            self.storage.clear();
+            Arc::get_mut(&mut self.storage).unwrap().clear();
+            // self.storage.clear();
             assert!(self.storage.is_empty());
         }
     }
@@ -89,7 +90,7 @@ impl From<String> for Buffer {
     fn from(s: String) -> Self {
         let mut t = Buffer {
             str_len: 0,
-            storage: Vec::from(s),
+            storage: Arc::new(Vec::from(s)),
             starting_offset: 0,
         };
         t.str_len = t.storage.len();
@@ -100,7 +101,7 @@ impl From<Vec<u8>> for Buffer {
     fn from(v: Vec<u8>) -> Self {
         Buffer {
             str_len: v.len(),
-            storage: v,
+            storage: Arc::new(Vec::from(v)),
             starting_offset: 0,
         }
     }
@@ -112,12 +113,12 @@ impl Deref for Buffer {
         &self.storage[self.starting_offset..self.storage.len()]
     }
 }
-impl DerefMut for Buffer {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        let len = self.storage.len() as SizeT;
-        &mut self.storage[self.starting_offset..len]
-    }
-}
+// impl DerefMut for Buffer {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         let len = self.storage.len() as SizeT;
+//         &mut self.storage[self.starting_offset..len]
+//     }
+// }
 
 #[derive(Debug)]
 pub struct BufferList {
@@ -230,24 +231,11 @@ mod tests {
         println!("{}", String::from_utf8_lossy(b));
     }
 
-    fn deref_mut_(b: &mut [u8]) {
-        println!("before:{}", String::from_utf8_lossy(b));
-        let c = vec![49; b.len()];
-        b.copy_from_slice(&c);
-        println!("after:{}", String::from_utf8_lossy(b));
-    }
-
     // cargo test --lib test_deref
     #[test]
     fn test_deref() {
         let b = Buffer::new("123".to_string().into_bytes());
         deref_(&b);
-    }
-
-    #[test]
-    fn test_deref_mut() {
-        let mut b = Buffer::new("123".to_string().into_bytes());
-        deref_mut_(&mut b);
     }
 
     #[test]

@@ -8,13 +8,12 @@ use crate::util::tcp_timer::TcpTimer;
 use crate::wrapping_integers::WrappingInt32;
 use crate::SizeT;
 use std::collections::{BTreeMap, LinkedList, VecDeque};
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct TCPSender {
     isn: WrappingInt32,
-    segments_out: VecDeque<Arc<Mutex<TCPSegment>>>,
-    outstanding: BTreeMap<u64, Arc<Mutex<TCPSegment>>>,
+    segments_out: VecDeque<TCPSegment>,
+    outstanding: BTreeMap<u64, TCPSegment>,
     stream: ByteStream,
     timer: TcpTimer,
     initial_retransmission_timeout: u32,
@@ -70,8 +69,7 @@ impl TCPSender {
 
         let mut list: LinkedList<u64> = LinkedList::new();
         for (first, second) in self.outstanding.iter() {
-            let _second = second.lock().unwrap();
-            if (first + (_second.length_in_sequence_space() as u64) - 1) < abs_ack_no {
+            if (first + (second.length_in_sequence_space() as u64) - 1) < abs_ack_no {
                 list.push_back(*first);
             }
         }
@@ -83,6 +81,7 @@ impl TCPSender {
         }
 
         let last_abs_ack_no = WrappingInt32::unwrap(&self.last_ack_no, &self.isn, self.check_point);
+        // let last_abs_ack_no = self.wnd_left_abs_no;
         if abs_ack_no > last_abs_ack_no {
             self.retransmission_timeout = self.initial_retransmission_timeout;
             self.consecutive_retransmissions = 0;
@@ -98,8 +97,8 @@ impl TCPSender {
         // so when _window_size == 0, then (_wnd_right_abs_no-_wnd_left_abs_no+1)==1
         self.window_size = window_size;
         self.last_ack_no = ackno;
-        self.wnd_left_abs_no =
-            WrappingInt32::unwrap(&self.last_ack_no, &self.isn, self.check_point);
+        self.wnd_left_abs_no = WrappingInt32::unwrap(&self.last_ack_no, &self.isn, self.check_point);
+        // self.wnd_left_abs_no = abs_ack_no;
         self.wnd_right_abs_no = self.wnd_left_abs_no
             + (if self.window_size == 0 {
                 1
@@ -115,13 +114,13 @@ impl TCPSender {
     #[allow(dead_code)]
     pub fn send_empty_segment(&mut self, rst: bool) {
         self.segments_out
-            .push_back(Arc::new(Mutex::from(TCPSender::build_segment(
+            .push_back(TCPSender::build_segment(
                 vec![],
                 false,
                 false,
                 rst,
                 WrappingInt32::wrap(self.next_abs_seq_no, &self.isn.clone()),
-            ))));
+            ));
     }
 
     #[allow(dead_code)]
@@ -129,18 +128,17 @@ impl TCPSender {
         let state = TCPState::state_summary_sender(&self);
         match state {
             TCPSenderStateSummary::CLOSED => {
-                let seg = Arc::new(Mutex::new(TCPSender::build_segment(
+                let seg = TCPSender::build_segment(
                     vec![],
                     true,
                     false,
                     false,
                     self.isn.clone(),
-                )));
+                );
+                let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
                 self.segments_out.push_back(seg.clone());
-                self.outstanding.insert(self.next_abs_seq_no, seg.clone());
-
-                self.next_abs_seq_no =
-                    self.next_abs_seq_no + seg.lock().unwrap().length_in_sequence_space() as u64;
+                self.outstanding.insert(self.next_abs_seq_no, seg);
+                self.next_abs_seq_no = n_;
                 self.timer
                     .start(self.ms_total_tick, self.retransmission_timeout);
             }
@@ -150,44 +148,41 @@ impl TCPSender {
                     let gap: SizeT = (self.wnd_right_abs_no - self.next_abs_seq_no + 1) as SizeT;
                     let vec = vec![TCPConfig::MAX_PAYLOAD_SIZE, gap, self.stream.buffer_size()];
                     let readable: SizeT = *vec.iter().min().unwrap();
-                    if self.stream.input_ended()
+                    let data = self.stream.read(readable);
+                    if self.stream.eof()
                         && (self.next_abs_seq_no + readable as u64) <= self.wnd_right_abs_no
                     {
                         fin = true;
                     }
-                    let data = self.stream.read(readable);
-                    let seg = Arc::new(Mutex::new(TCPSender::build_segment(
+                    let seg = TCPSender::build_segment(
                         data,
                         false,
                         fin,
                         false,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
-                    )));
+                    );
+                    let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
                     self.segments_out.push_back(seg.clone());
-                    self.outstanding.insert(self.next_abs_seq_no, seg.clone());
-
-                    self.next_abs_seq_no = self.next_abs_seq_no
-                        + seg.lock().unwrap().length_in_sequence_space() as u64;
+                    self.outstanding.insert(self.next_abs_seq_no, seg);
+                    self.next_abs_seq_no = n_;
                     self.timer
                         .start(self.ms_total_tick, self.retransmission_timeout);
                 }
                 if fin == false
-                    && self.stream.buffer_empty()
-                    && self.stream.input_ended()
+                    && self.stream.eof()
                     && self.next_abs_seq_no <= self.wnd_right_abs_no
                 {
-                    let seg = Arc::new(Mutex::new(TCPSender::build_segment(
+                    let seg = TCPSender::build_segment(
                         vec![],
                         false,
                         true,
                         false,
                         WrappingInt32::wrap(self.next_abs_seq_no, &self.isn),
-                    )));
+                    );
+                    let n_ = self.next_abs_seq_no + seg.length_in_sequence_space() as u64;
                     self.segments_out.push_back(seg.clone());
-                    self.outstanding.insert(self.next_abs_seq_no, seg.clone());
-
-                    self.next_abs_seq_no = self.next_abs_seq_no
-                        + seg.lock().unwrap().length_in_sequence_space() as u64;
+                    self.outstanding.insert(self.next_abs_seq_no, seg);
+                    self.next_abs_seq_no = n_;
                     self.timer
                         .start(self.ms_total_tick, self.retransmission_timeout);
                 }
@@ -222,7 +217,7 @@ impl TCPSender {
     pub fn bytes_in_flight(&self) -> SizeT {
         let mut bytes = 0;
         for (_first, _second) in self.outstanding.iter() {
-            bytes = bytes + _second.lock().unwrap().length_in_sequence_space();
+            bytes = bytes + _second.length_in_sequence_space();
         }
         return bytes;
     }
@@ -233,12 +228,12 @@ impl TCPSender {
     }
 
     #[allow(dead_code)]
-    pub fn segments_out(&self) -> &VecDeque<Arc<Mutex<TCPSegment>>> {
+    pub fn segments_out(&self) -> &VecDeque<TCPSegment> {
         &self.segments_out
     }
 
     #[allow(dead_code)]
-    pub fn segments_out_mut(&mut self) -> &mut VecDeque<Arc<Mutex<TCPSegment>>> {
+    pub fn segments_out_mut(&mut self) -> &mut VecDeque<TCPSegment> {
         &mut self.segments_out
     }
 

@@ -1327,10 +1327,8 @@ impl TCPTestHarness {
     pub fn execute(&mut self, step: &mut dyn TCPTestStep, _note: String) {
         step.execute(self);
         while !self.fsm.segments_out_mut().is_empty() {
-            let seg = self.fsm.segments_out_mut().pop_front().unwrap();
-            let mut_seg = seg.lock().unwrap();
-            let mut t = TCPSegment::new(mut_seg.header().clone(), mut_seg.payload().clone());
-            self.flt.write_seg(&mut t);
+            let mut mut_seg = self.fsm.segments_out_mut().pop_front().unwrap();
+            self.flt.write_seg(&mut mut_seg);
         }
     }
 

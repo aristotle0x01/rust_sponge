@@ -12,8 +12,8 @@
 
 // macros used internally
 
-use crate::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use crate::tcp_helpers::ipv4_datagram::IPv4Datagram;
+use crate::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use crate::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use crate::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
 use crate::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;

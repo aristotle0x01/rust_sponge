@@ -87,3 +87,11 @@ impl TCPSegment {
         &mut self.payload
     }
 }
+impl Clone for TCPSegment {
+    fn clone(&self) -> Self {
+        TCPSegment {
+            header: self.header.clone(),
+            payload: self.payload.clone(),
+        }
+    }
+}

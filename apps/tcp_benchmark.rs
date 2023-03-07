@@ -6,13 +6,13 @@ use rust_sponge::SizeT;
 use std::cmp::min;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::io::Write;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 // todo: has not met the minimal performance requirement yet
 
-const len: SizeT = 100 * 1024 * 1024;
+const len: SizeT = 1 * 1000 * 1024;
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 // #[bench]
@@ -26,8 +26,8 @@ fn main_loop(reorder: bool) {
         ..Default::default()
     };
 
-    let mut x = TCPConnection::new(config.clone());
-    let mut y = TCPConnection::new(config.clone());
+    let mut x = TCPConnection::new2(config.clone(), "x".to_string());
+    let mut y = TCPConnection::new2(config.clone(), "y".to_string());
 
     // let string_to_send: String = (0..len)
     //     .map(|_| {
@@ -42,9 +42,7 @@ fn main_loop(reorder: bool) {
     //     .as_bytes()
     //     .to_vec();
     let string_to_send= vec![49u8;len];
-    let mut hasher = DefaultHasher::new();
-    string_to_send.hash(&mut hasher);
-    let sent_hash = hasher.finish();
+    let sent_hash = seahash::hash(&string_to_send);
 
     let mut bytes_to_send = Buffer::new(string_to_send);
     x.connect();
@@ -56,10 +54,11 @@ fn main_loop(reorder: bool) {
     let first_time = Instant::now();
 
     while !y.inbound_stream().eof() {
+        let b = x_closed;
         x_closed = loop_(
             &mut x,
             &mut y,
-            x_closed,
+            b,
             reorder,
             &mut bytes_to_send,
             &mut string_received,
@@ -71,9 +70,7 @@ fn main_loop(reorder: bool) {
         string_received.len(),
         "strings sent vs. received len don't match"
     );
-    let mut hasher_r = DefaultHasher::new();
-    string_received.hash(&mut hasher_r);
-    let recv_hash = hasher_r.finish();
+    let recv_hash = seahash::hash(&string_received);
     assert_eq!(
         sent_hash,
         recv_hash,
@@ -94,10 +91,11 @@ fn main_loop(reorder: bool) {
     );
 
     while x.active() || y.active() {
+        let b = x_closed;
         x_closed = loop_(
             &mut x,
             &mut y,
-            x_closed,
+            b,
             reorder,
             &mut bytes_to_send,
             &mut string_received,
@@ -106,10 +104,19 @@ fn main_loop(reorder: bool) {
 }
 
 fn move_segments(x: &mut TCPConnection, y: &mut TCPConnection, reorder: bool) {
-    while !x.segments_out_mut().is_empty() {
-        let i = if reorder {x.segments_out_mut().pop_back().unwrap()} else {x.segments_out_mut().pop_front().unwrap()};
-        let t_ = i.lock().unwrap();
-        y.segment_received(t_.deref());
+    if reorder {
+        while !x.segments_out_mut().is_empty() {
+            let t = x.segments_out_mut().back().unwrap();
+            y.segment_received(t);
+            x.segments_out_mut().pop_back();
+        }
+    } else {
+        while !x.segments_out_mut().is_empty() {
+            let t = x.segments_out_mut().front().unwrap();
+            // eprintln!("xout: {}", t.header().summary());
+            y.segment_received(t);
+            x.segments_out_mut().pop_front();
+        }
     }
 }
 
@@ -126,6 +133,8 @@ fn loop_(
     while bytes_to_send.size() > 0 && x.remaining_outbound_capacity() > 0 {
         let want = min(x.remaining_outbound_capacity(), bytes_to_send.size());
         let written = x.write(&bytes_to_send.str()[0..want]);
+
+        eprintln!("bytes_to_send: {} bytes, x written:{}, {}", bytes_to_send.size(), x.remaining_outbound_capacity(), written);
         assert_eq!(
             want,
             written,
@@ -148,6 +157,7 @@ fn loop_(
         string_received
             .extend_from_slice(y.inbound_stream_mut().read(available_output).as_slice());
     }
+    eprintln!("string_received: recv {} bytes, bytes_to_send:{}, {}, {}", available_output, bytes_to_send.len(), y.inbound_stream().eof(), y.inbound_stream().bytes_written());
 
     x.tick(1000);
     y.tick(1000);
