@@ -67,5 +67,12 @@ path = "apps/tcp_benchmark.rs"
 name = "bidirectional_stream_copy"
 path = "apps/bidirectional_stream_copy.rs"
 
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+debug = 1
+opt-level = 3
+
 [rust]
 debuginfo-level = 1
