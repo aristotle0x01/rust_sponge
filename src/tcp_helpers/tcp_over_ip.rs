@@ -54,10 +54,8 @@ impl TCPOverIPv4Adapter {
                     Ipv4Addr::from(ip_dgram_dst),
                     self.fd_adapter_base.config().source.port(),
                 );
-                self.fd_adapter_base.config_mut().destination = SocketAddrV4::new(
-                    Ipv4Addr::from(ip_dgram_src),
-                    tcp_seg.header().sport,
-                );
+                self.fd_adapter_base.config_mut().destination =
+                    SocketAddrV4::new(Ipv4Addr::from(ip_dgram_src), tcp_seg.header().sport);
                 self.fd_adapter_base.set_listening(false);
             } else {
                 return None;

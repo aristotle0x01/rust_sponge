@@ -73,7 +73,7 @@ impl ByteStream {
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
 
-        let mut r = vec![0u8;bytes_to_read];
+        let mut r = vec![0u8; bytes_to_read];
         if bytes_to_read <= (capacity - self.read_pos) {
             r.copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + bytes_to_read)]);
             self.read_pos = (self.read_pos + bytes_to_read) % capacity;
@@ -84,7 +84,8 @@ impl ByteStream {
             self.read_pos = (self.read_pos + size_1) % capacity;
 
             let size_2 = bytes_to_read - size_1;
-            r[size_1..bytes_to_read].copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_2)]);
+            r[size_1..bytes_to_read]
+                .copy_from_slice(&self.buffer[self.read_pos..(self.read_pos + size_2)]);
             self.read_pos = (self.read_pos + size_2) % capacity;
 
             self.total_read_count = self.total_read_count + bytes_to_read;
@@ -103,7 +104,7 @@ impl ByteStream {
         let capacity = self.capacity;
         let bytes_to_read = cmp::min(self.buffer_size(), len);
 
-        let mut r = vec![0u8;bytes_to_read];
+        let mut r = vec![0u8; bytes_to_read];
         if bytes_to_read <= (capacity - self.read_pos) {
             let readable = &self.buffer[self.read_pos..(self.read_pos + bytes_to_read)];
             r.copy_from_slice(readable);

@@ -24,7 +24,7 @@ pub struct TCPConnection {
     fin_sent: bool,
     syn_sent_or_recv: bool,
     #[allow(dead_code)]
-    name: String
+    name: String,
 }
 impl TCPConnection {
     #[allow(dead_code)]
@@ -41,7 +41,7 @@ impl TCPConnection {
             fin_received: false,
             fin_sent: false,
             syn_sent_or_recv: false,
-            name: "".to_string()
+            name: "".to_string(),
         }
     }
 
@@ -59,7 +59,7 @@ impl TCPConnection {
             fin_received: false,
             fin_sent: false,
             syn_sent_or_recv: false,
-            name: _name
+            name: _name,
         }
     }
 

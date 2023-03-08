@@ -41,7 +41,7 @@ fn main_loop(reorder: bool) {
     //     .collect::<String>()
     //     .as_bytes()
     //     .to_vec();
-    let string_to_send= vec![49u8;len];
+    let string_to_send = vec![49u8; len];
     let sent_hash = seahash::hash(&string_to_send);
 
     let mut bytes_to_send = Buffer::new(string_to_send);
@@ -72,8 +72,7 @@ fn main_loop(reorder: bool) {
     );
     let recv_hash = seahash::hash(&string_received);
     assert_eq!(
-        sent_hash,
-        recv_hash,
+        sent_hash, recv_hash,
         "strings sent vs. received don't match"
     );
 

@@ -20,15 +20,14 @@ impl TCPSegment {
 
     #[allow(dead_code)]
     pub fn parse_new(bytes: Buffer, checksum: u32) -> Result<TCPSegment, ParseResult> {
-        let mut t =
-        TCPSegment {
+        let mut t = TCPSegment {
             header: TCPHeader::new(),
             payload: bytes,
         };
         let r = t.parse(checksum);
         match r {
             ParseResult::NoError => Ok(t),
-            _ => Err(r)
+            _ => Err(r),
         }
     }
 
