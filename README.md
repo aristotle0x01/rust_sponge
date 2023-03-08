@@ -1,73 +1,88 @@
-For build prereqs, see [the CS144 VM setup instructions](https://web.stanford.edu/class/cs144/vm_howto).
+Rust re-implementation of the cs144 c++ tcp stack project: [cs144 c++ sponge](https://github.com/aristotle0x01/sponge)
 
-## Sponge quickstart
+## benchmark vs c++
 
-To set up your build directory:
+both under release build:
 
-	$ mkdir -p <path/to/sponge>/build
-	$ cd <path/to/sponge>/build
-	$ cmake ..
+![](https://user-images.githubusercontent.com/2216435/223632916-e4885c40-7a39-473f-a03b-9a419fa5e936.png)
 
-**Note:** all further commands listed below should be run from the `build` dir.
 
-To build:
 
-    $ make
+## Environment
 
-You can use the `-j` switch to build in parallel, e.g.,
+Dev and debug use the original cs144 vbox ubuntu image
 
-    $ make -j$(nproc)
+### Network
 
-To test (after building; make sure you've got the [build prereqs](https://web.stanford.edu/class/cs144/vm_howto) installed!)
+    // option 1
+    $ /tun.sh start 144
+    
+    // option 2
+    $ ip tuntap add dev tun144 mode tun
+    $ ip link set tun144 up
+    $ ip addr add 10.0.0.1/24 dev tun144
+    $ tshark -i tun144
+    
+    // monitor commands
+    $ tshark -f "tcp port 1080"
+    $ sudo tshark -Pw /tmp/debug.raw -i tun144
+    $ sudo tshark -i tun144
 
-    $ make check_labN *(replacing N with a checkpoint number)*
 
-The first time you run `make check_lab...`, it will run `sudo` to configure two
-[TUN](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) devices for use during
-testing.
 
-### build options
+## build options
 
-You can specify a different compiler when you run cmake:
+**General build**
 
-    $ CC=clang CXX=clang++ cmake ..
+    $ cargo build
+    $ cargo build --release --bins // release build all the binaries
+    $ cargo build --release --bin tun // release build certain binary
+    $ cargo build  --example bidirectional_stream_copy // build an example
 
-You can also specify `CLANG_TIDY=` or `CLANG_FORMAT=` (see "other useful targets", below).
+**test build**
 
-Sponge's build system supports several different build targets. By default, cmake chooses the `Release`
-target, which enables the usual optimizations. The `Debug` target enables debugging and reduces the
-level of optimization. To choose the `Debug` target:
+    //**** integration tests under "tests" folder
+    $ cargo test // all tests
+    $ cargo test --test fsm_winsize // specific test
+    $ cargo test --test fsm_winsize -- --show-output // specific test
+    
+    //**** unittest inside a specific class
+    $ cargo test --lib test_deref -- --show-output // specific unittest
 
-    $ cmake .. -DCMAKE_BUILD_TYPE=Debug
 
-The following targets are supported:
 
-- `Release` - optimizations
-- `Debug` - debug symbols and `-Og`
-- `RelASan` - release build with [ASan](https://en.wikipedia.org/wiki/AddressSanitizer) and
-  [UBSan](https://developers.redhat.com/blog/2014/10/16/gcc-undefined-behavior-sanitizer-ubsan/)
-- `RelTSan` - release build with
-  [ThreadSan](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/Thread_Sanitizer)
-- `DebugASan` - debug build with ASan and UBSan
-- `DebugTSan` - debug build with ThreadSan
+## dev & profiling
 
-Of course, you can combine all of the above, e.g.,
+**debug**
 
-    $ CLANG_TIDY=clang-tidy-6.0 CXX=clang++-6.0 .. -DCMAKE_BUILD_TYPE=Debug
+    // show stacktrace when assert failed or fault
+    $ RUST_BACKTRACE=1 cargo run --bin tcp_udp
+    $ RUST_BACKTRACE=1 cargo test --test fsm_winsize
+    $ RUST_BACKTRACE=1 cargo test --test fsm_winsize -- --show-output
+    $ RUST_BACKTRACE=1 ./target/debug/tcp_benchmark 2>&1 | grep "xout" > a.txt
+    $ RUST_BACKTRACE=1 ./target/debug/tcp_benchmark 2>a.txt
+    $ RUST_BACKTRACE=1 ./tcp_udp -t 12 -w 1450  169.254.144.1 7107
+    $ RUST_BACKTRACE=1 ./txrx.sh -ucSd 1M -w 32K
+    $ lldb -- ./target/debug/fsm_winsize --test
+    $ target/debug/tcp_native "-l" "127.0.0.1" "1234"
 
-**Note:** if you want to change `CC`, `CXX`, `CLANG_TIDY`, or `CLANG_FORMAT`, you need to remove
-`build/CMakeCache.txt` and re-run cmake. (This isn't necessary for `CMAKE_BUILD_TYPE`.)
+**perf**
 
-### other useful targets
+    $ valgrind --tool=callgrind ./target/debug/tcp_benchmark // output callgrind.out.pid
+    
+    // on Mac
+    $ qcachegrind callgrind.out.pid
 
-To generate documentation (you'll need `doxygen`; output will be in `build/doc/`):
+![](https://user-images.githubusercontent.com/2216435/223631959-5fe8076a-4d0b-468b-b6cd-d80c3224be34.png)
 
-    $ make doc
 
-To format (you'll need `clang-format`):
 
-    $ make format
+## Fundamentals
 
-To see all available targets,
+**TcpConnection**
 
-    $ make help
+![](https://user-images.githubusercontent.com/2216435/223634619-465cea82-fee1-4815-a2d6-84893227b5c9.png)
+
+**bidirectional_stream_copy**
+
+![](https://user-images.githubusercontent.com/2216435/223634573-c4c03c71-29e4-4ac2-8c54-0e077580d8b1.png)
