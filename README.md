@@ -86,3 +86,7 @@ Dev and debug use the original cs144 vbox ubuntu image
 **bidirectional_stream_copy**
 
 ![](https://user-images.githubusercontent.com/2216435/223634573-c4c03c71-29e4-4ac2-8c54-0e077580d8b1.png)
+
+**tcp_sponge_socket**
+
+![](https://user-images.githubusercontent.com/2216435/223950969-38a3875e-c6b3-4f23-80f4-dd01e02fd85b.png)
