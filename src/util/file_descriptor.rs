@@ -75,8 +75,11 @@ impl FileDescriptor {
 
     #[allow(dead_code)]
     pub fn read(&mut self, _limit: u32) -> Vec<u8> {
-        let mut v: Vec<u8> = Vec::with_capacity(_limit as usize);
-        self.read_into(&mut v, _limit);
+        let buffer_size: SizeT = 1024 * 1024;
+        let bound: SizeT = min(buffer_size, _limit as SizeT);
+
+        let mut v: Vec<u8> = Vec::with_capacity(bound as usize);
+        self.read_into(&mut v, bound as u32);
 
         v
     }

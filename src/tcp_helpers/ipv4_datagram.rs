@@ -24,10 +24,15 @@ impl IPv4Datagram {
 
         let err = p.get_error();
         drop(p);
+        if err != ParseResult::NoError {
+            return err;
+        }
 
         if self.payload.size() != self.header.payload_length() as usize {
             return ParseResult::PacketTooShort;
         }
+
+        eprintln!("     ****IPv4Datagram {}, {}", self.header.summary(), self.payload.size());
 
         err
     }

@@ -12,7 +12,7 @@ use std::str::FromStr;
 mod bidirectional_stream_copy;
 use crate::bidirectional_stream_copy::bidirectional_stream_copy_sponge;
 
-pub const TUN_DFLT: &'static str = "tun144";
+pub const TUN_DFLT: &'static str = "tun144\0";
 pub const LOCAL_ADDRESS_DFLT: &'static str = "169.254.144.9";
 
 fn show_usage(argv0: &str, msg: &str) {
@@ -96,7 +96,7 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
             curr += 2;
         } else if v.eq("-d") {
             check_argc(argc, argv, curr, "ERROR: -d requires one argument.");
-            tundev = argv[(curr + 1) as usize].to_string();
+            tundev = argv[(curr + 1) as usize].to_string() + "\0";
             curr += 2;
         } else if v.eq("-Lu") {
             check_argc(argc, argv, curr, "ERROR: -Lu requires one argument.");
@@ -123,10 +123,10 @@ fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, boo
     if listen {
         c_filt
             .source
-            .set_ip(Ipv4Addr::from_str("127.0.0.1").unwrap());
+            .set_ip(Ipv4Addr::from_str(source_address.as_str()).unwrap());
         c_filt
             .source
-            .set_port(argv[(curr + 1) as usize].parse().unwrap());
+            .set_port(argv[(curr + 1) as usize].as_str().parse().unwrap());
         assert_ne!(
             c_filt.source.port(),
             0,
@@ -160,7 +160,7 @@ fn main() {
 
     let (c_fsm, c_filt, listen, tun_dev_name) = get_config(args.len() as i32, &args);
     eprintln!(
-        "tcp:{}, adapter:{},{}",
+        "tcp:{}, adapter:dst=>{},src=>{}",
         c_fsm.clone().to_string(),
         c_filt.clone().destination.to_string(),
         c_filt.clone().source.to_string()
