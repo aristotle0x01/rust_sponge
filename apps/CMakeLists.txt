@@ -1,0 +1,7 @@
+#add_sponge_exec (tcp_native)
+#add_sponge_exec (tun)
+#add_sponge_exec (tcp_udp)
+#add_sponge_exec (tcp_ipv4)
+#add_sponge_exec (tcp_ip_ethernet)
+#add_sponge_exec (webget)
+#add_sponge_exec (tcp_benchmark)

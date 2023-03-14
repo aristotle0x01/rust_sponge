@@ -18,6 +18,8 @@ struct ifreq {
 }
 
 // A FileDescriptor to a [Linux TUN/TAP](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) device
+// Tun/Tap interface tutorial (https://backreference.org/2010/03/26/tuntap-interface-tutorial/index.html)
+// Virtual Networking Devices - TUN, TAP and VETH Pairs Explained (https://www.packetcoders.io/virtual-networking-devices-tun-tap-and-veth-pairs-explained/)
 #[derive(Debug)]
 pub struct TunTapFD {
     fd: FileDescriptor,

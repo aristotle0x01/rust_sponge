@@ -25,8 +25,8 @@ Dev and debug use the original cs144 vbox ubuntu image
     
     // monitor commands
     $ tshark -f "tcp port 1080"
-    $ sudo tshark -Pw /tmp/debug.raw -i tun144
-    $ sudo tshark -i tun144
+    $ tshark -Pw /tmp/debug.raw -i tun144
+    $ tshark -f "src 169.254.144.9 or dst 169.254.144.9 or src 169.254.145.9 or dst 169.254.145.9" -i tun144
 
 
 
@@ -37,7 +37,7 @@ Dev and debug use the original cs144 vbox ubuntu image
     $ cargo build
     $ cargo build --release --bins // release build all the binaries
     $ cargo build --release --bin tun // release build certain binary
-    $ cargo build  --example bidirectional_stream_copy // build an example
+    $ cargo build --example bidirectional_stream_copy // build an example
 
 **test build**
 
@@ -90,3 +90,9 @@ Dev and debug use the original cs144 vbox ubuntu image
 **tcp_sponge_socket**
 
 ![](https://user-images.githubusercontent.com/2216435/223950969-38a3875e-c6b3-4f23-80f4-dd01e02fd85b.png)
+
+**tun/tap interface**
+
+[Virtual Networking Devices - TUN, TAP and VETH Pairs Explained](https://www.packetcoders.io/virtual-networking-devices-tun-tap-and-veth-pairs-explained/)
+
+![](https://www.packetcoders.io/content/images/2020/10/image2.png)

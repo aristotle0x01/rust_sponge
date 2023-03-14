@@ -101,7 +101,7 @@ _socat_connect () {
 }
 
 _rt_listen () {
-    echo "  coproc $3 -l $4 ${SERVER_PORT} >$1 <$2 && sleep 0.1"
+    echo "  ****_rt_listen: coproc $3 -l $4 ${SERVER_PORT} >$1 <$2 && sleep 0.1"
     coproc $3 -l $4 ${SERVER_PORT} >"$1" <"$2" && sleep 0.1
     set +u
     [ -z "$COPROC_PID" ] && { echo "Error in _rt_listen"; exit 1; }
@@ -109,7 +109,7 @@ _rt_listen () {
 }
 
 _rt_connect () {
-    echo "  $3 $4 ${SERVER_PORT} >$1 <$2"
+    echo "  ****_rt_connect: $3 $4 ${SERVER_PORT} >$1 <$2"
     $3 $4 ${SERVER_PORT} >"$1" <"$2" || { echo "Error in _rt_connect"; exit 1; }
 }
 
@@ -120,14 +120,12 @@ test_listen () {
 
 test_connect () {
     [ "$#" != 2 ] && { echo "bad args"; exit 1; }
-    echo "****test_connect:$1 $2 ${TEST_PROG} ${REF_HOST}" 
     _rt_connect "$1" "$2" "${TEST_PROG}" "${REF_HOST}"
 }
 
 ref_listen () {
     [ "$#" != 2 ] && { echo "bad args"; exit 1; }
     if [ "$IUMODE" = "u" ] || [ -z "$USE_IPV4" ] || [ "$USE_IPV4" = "n" ]; then
-        echo "****ref_listen: "$1" "$2" "${REF_PROG}" "${REF_HOST}""  
         _rt_listen "$1" "$2" "${REF_PROG}" "${REF_HOST}"
     else
         _socat_listen "$1" "$2"
@@ -172,7 +170,7 @@ trap exit_cleanup EXIT
 
 get_cmdline_options "$@"
 
-. tunconfig
+. "$(dirname "$0")"/etc/tunconfig
 REF_HOST=${TUN_IP_PREFIX}.144.1
 TEST_HOST=${TUN_IP_PREFIX}.144.1
 SERVER_PORT=$(($((RANDOM % 50000)) + 1025))
@@ -181,37 +179,26 @@ if [ "$IUMODE" = "i" ]; then
     TEST_HOST=${TUN_IP_PREFIX}.144.9
     if [ -z "$USE_IPV4" ]; then
         REF_HOST=${TUN_IP_PREFIX}.145.9
-        # ./target/debug/tcp_ipv4 -t 12 -d tun145 -a 169.254.145.9
-        REF_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun145 -a ${REF_HOST}"
-        # ./target/debug/tcp_ipv4 -t 12 -d tun144 -a 169.254.144.9
-        TEST_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} -d tun144 -a ${TEST_HOST}"
+        REF_PROG="/media/sf_rust-sponge/target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun145 -a ${REF_HOST}"
+        TEST_PROG="/media/sf_rust-sponge/target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} -d tun144 -a ${TEST_HOST}"
     else
-        REF_PROG="./target/debug/tcp_native"
-        TEST_PROG="./target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun144 -a ${TEST_HOST}"
+        REF_PROG="/media/sf_rust-sponge/target/debug/tcp_native"
+        TEST_PROG="/media/sf_rust-sponge/target/debug/tcp_ipv4 ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN} -d tun144 -a ${TEST_HOST}"
     fi
-    echo "**** i:"
-    echo "  REF_PROG: ${REF_PROG}"
-    echo "  TEST_PROG: ${TEST_PROG}"
 else
     # UDP mode
-    REF_PROG="./target/debug/tcp_udp ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}"
-    TEST_PROG="./target/debug/tcp_udp ${RTTO} ${WINSIZE}"
+    REF_PROG="/media/sf_rust-sponge/target/debug/tcp_udp ${RTTO} ${WINSIZE} ${LOSS_UP} ${LOSS_DN}"
+    TEST_PROG="/media/sf_rust-sponge/target/debug/tcp_udp ${RTTO} ${WINSIZE}"
 fi
 
 TEST_OUT_FILE=$(mktemp)
 TEST_IN_FILE=$(mktemp)
 make_test_file "${TEST_IN_FILE}" "${DATASIZE}"
-# TEST_OUT_FILE="/tmp/test_out"
-# TEST_IN_FILE="/tmp/test_in"
-echo "****in: ${TEST_IN_FILE}, out: ${TEST_OUT_FILE}"
 HASH_IN=$(sha256sum ${TEST_IN_FILE} | cut -d \  -f 1)
 HASH_OUT2=
 case "$RSDMODE" in
     S)  # test sending
         if [ "$CSMODE" = "c" ]; then
-            echo "**** c:"
-            echo "  ref_listen ${TEST_OUT_FILE} /dev/null"
-            echo "  test_connect /dev/null ${TEST_IN_FILE}"
             ref_listen "${TEST_OUT_FILE}" /dev/null
             test_connect /dev/null "${TEST_IN_FILE}"
         else
