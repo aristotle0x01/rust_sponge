@@ -327,4 +327,5 @@ pub fn bidirectional_stream_copy_sponge(socket: &mut dyn AsLocalStreamSocketMut)
     }
 }
 
+#[warn(dead_code)]
 fn main() {}

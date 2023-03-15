@@ -1,16 +1,10 @@
+use rand::Rng;
 use rust_sponge::tcp_connection::TCPConnection;
 use rust_sponge::tcp_helpers::tcp_config::TCPConfig;
-use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::SizeT;
 use std::cmp::min;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use std::io::Write;
-use std::ops::Deref;
 use std::time::Instant;
-
-// todo: has not met the minimal performance requirement yet
 
 const len: SizeT = 100 * 1024 * 1024;
 const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -29,19 +23,12 @@ fn main_loop(reorder: bool) {
     let mut x = TCPConnection::new2(config.clone(), "x".to_string());
     let mut y = TCPConnection::new2(config.clone(), "y".to_string());
 
-    // let string_to_send: String = (0..len)
-    //     .map(|_| {
-    //         let idx = rand::thread_rng().gen_range(0..CHARSET.len());
-    //         CHARSET[idx] as char
-    //     })
-    //     .collect();
-    // https://users.rust-lang.org/t/fill-string-with-repeated-character/1121
-    // let string_to_send = (0..len)
-    //     .map(|_| "x")
-    //     .collect::<String>()
-    //     .as_bytes()
-    //     .to_vec();
-    let string_to_send = vec![49u8; len];
+    let string_to_send: Vec<u8> = (0..len)
+        .map(|_| {
+            let idx = rand::thread_rng().gen_range(0..CHARSET.len());
+            CHARSET[idx] as u8
+        })
+        .collect();
     let sent_hash = seahash::hash(&string_to_send);
 
     let mut bytes_to_send = Buffer::new(string_to_send);
@@ -125,7 +112,7 @@ fn loop_(
     x_closed: bool,
     reorder: bool,
     bytes_to_send: &mut Buffer,
-    mut string_received: &mut Vec<u8>,
+    string_received: &mut Vec<u8>,
 ) -> bool {
     let mut ret = x_closed;
 

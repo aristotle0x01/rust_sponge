@@ -220,6 +220,10 @@ pub trait AsFileDescriptor {
     fn eof(&self) -> bool {
         self.as_file_descriptor().eof()
     }
+
+    fn closed(&self) -> bool {
+        self.as_file_descriptor().closed()
+    }
 }
 pub trait AsFileDescriptorMut: AsFileDescriptor {
     fn as_file_descriptor_mut(&mut self) -> &mut FileDescriptor;

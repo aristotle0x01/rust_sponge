@@ -20,6 +20,8 @@ use crate::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
 
 pub type SizeT = usize;
 pub type InternetDatagram = IPv4Datagram;
+pub type TCPOverUDPSpongeSocket = TCPSpongeSocket<TCPOverUDPSocketAdapter>;
+pub type TCPOverIPv4SpongeSocket = TCPSpongeSocket<TCPOverIPv4OverTunFdAdapter>;
 pub type LossyTCPOverUDPSocketAdapter = LossyFdAdapter<TCPOverUDPSocketAdapter>;
 pub type LossyTCPOverUDPSpongeSocket = TCPSpongeSocket<LossyTCPOverUDPSocketAdapter>;
 pub type LossyTCPOverIPv4OverTunFdAdapter = LossyFdAdapter<TCPOverIPv4OverTunFdAdapter>;

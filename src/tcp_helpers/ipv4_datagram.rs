@@ -32,7 +32,11 @@ impl IPv4Datagram {
             return ParseResult::PacketTooShort;
         }
 
-        eprintln!("     ****IPv4Datagram {}, {}", self.header.summary(), self.payload.size());
+        eprintln!(
+            "     ****IPv4Datagram {}, {}",
+            self.header.summary(),
+            self.payload.size()
+        );
 
         err
     }

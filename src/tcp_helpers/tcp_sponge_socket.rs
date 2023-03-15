@@ -2,16 +2,21 @@ use crate::tcp_connection::TCPConnection;
 use crate::tcp_helpers::fd_adapter::AsFdAdapterBaseMut;
 use crate::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use crate::tcp_helpers::tcp_state::{State, TCPState};
+use crate::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
 use crate::util::aeventloop::{AEventLoop, AInterestT};
 use crate::util::eventloop::Direction;
 use crate::util::eventloop::Result::Exit;
 use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::util::socket::{AsSocketMut, LocalStreamSocket};
+use crate::util::tun::TunFD;
 use crate::util::util::{system_call, timestamp_ms};
-use crate::SizeT;
+use crate::{SizeT, TCPOverIPv4SpongeSocket};
 use libc::{SHUT_RDWR, SHUT_WR};
+use rand::{thread_rng, Rng};
 use std::cmp::min;
 use std::fmt::Debug;
+use std::net::{Ipv4Addr, SocketAddrV4};
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -282,7 +287,7 @@ where
 
     #[allow(dead_code)]
     pub fn wait_until_closed(&mut self) {
-        self.main_thread_data.lock().unwrap().shutdown(SHUT_RDWR);
+        self.as_socket_mut().lock().unwrap().shutdown(SHUT_RDWR);
         eprintln!("DEBUG: Waiting for clean shutdown... ");
 
         let j = self.tcp_thread.take();
@@ -488,4 +493,44 @@ fn tcp_main<AdapterT>(
         );
     }
     tcp_.take();
+}
+
+#[derive(Debug)]
+pub struct CS144TCPSocket {
+    sock: TCPOverIPv4SpongeSocket,
+}
+impl CS144TCPSocket {
+    #[allow(dead_code)]
+    pub fn new() -> CS144TCPSocket {
+        CS144TCPSocket {
+            sock: TCPOverIPv4SpongeSocket::new(TCPOverIPv4OverTunFdAdapter::new(TunFD::new(
+                "tun144",
+            ))),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn connect(&mut self, _host: &str, _port: u16) {
+        let mut config = TCPConfig::default();
+        config.rt_timeout = 100;
+
+        let s_port: u16 = thread_rng().gen_range(20000..30000);
+        let adater_config = FdAdapterConfig {
+            source: SocketAddrV4::new(Ipv4Addr::from_str("169.254.144.9").unwrap(), s_port),
+            destination: SocketAddrV4::new(Ipv4Addr::from_str(_host).unwrap(), _port),
+            loss_rate_dn: 0,
+            loss_rate_up: 0,
+        };
+        self.sock.connect(&config, adater_config);
+    }
+
+    #[allow(dead_code)]
+    pub fn wait_until_closed(&mut self) {
+        self.sock.wait_until_closed();
+    }
+}
+impl AsLocalStreamSocketMut for CS144TCPSocket {
+    fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
+        self.sock.main_thread_data.clone()
+    }
 }

@@ -50,9 +50,8 @@ impl TunTapFD {
         for (i, byte) in devname_.as_bytes().iter().enumerate() {
             ifreq_.ifr_name[i] = *byte as c_char;
         }
-        let io_ = unsafe {
-            libc::ioctl(fd_desc.fd_num(), TUNSETIFF as _, &mut ifreq_ as *mut ifreq)
-        };
+        let io_ =
+            unsafe { libc::ioctl(fd_desc.fd_num(), TUNSETIFF as _, &mut ifreq_ as *mut ifreq) };
         system_call("ioctl", io_ as i32, 0);
 
         TunTapFD { fd: fd_desc }

@@ -1,6 +1,5 @@
 use rust_sponge::tcp_helpers::ipv4_datagram::IPv4Datagram;
 use rust_sponge::tcp_helpers::ipv4_header::IPv4Header;
-use rust_sponge::tcp_helpers::tcp_header::TCPHeader;
 use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
@@ -45,7 +44,7 @@ fn main() {
             println!("failed.");
             continue;
         }
-        let mut tcp_seg = ret.ok().unwrap();
+        let tcp_seg = ret.ok().unwrap();
 
         println!(
             "success! payload len={}, TCP header contents:",

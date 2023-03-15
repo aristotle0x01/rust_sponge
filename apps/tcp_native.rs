@@ -1,5 +1,4 @@
 use log::error;
-use rust_sponge::util::file_descriptor::AsFileDescriptorMut;
 use rust_sponge::util::socket::{AsSocket, AsSocketMut, TCPSocket};
 use std::env;
 
@@ -15,13 +14,12 @@ fn show_usage(argv0: &str) {
 // target/debug/apps/tcp_native "-l" "127.0.0.1" "1234"
 // cargo run --example tcp_native
 fn main() {
-    let mut server_mode = false;
     let args: Vec<_> = env::args().collect();
     let mut err = false;
     if args.len() < 3 {
         err = true;
     }
-    server_mode = args[1].eq("-l");
+    let server_mode = args[1].eq("-l");
     if server_mode && args.len() < 4 {
         err = true;
     }
@@ -43,37 +41,4 @@ fn main() {
     };
 
     bidirectional_stream_copy(&mut socket);
-}
-
-fn main2() {
-    let mut server_mode = false;
-    let args: Vec<_> = env::args().collect();
-    let mut err = false;
-    if args.len() < 3 {
-        err = true;
-    }
-    server_mode = args[1].eq("-l");
-    if server_mode && args.len() < 4 {
-        err = true;
-    }
-    if err {
-        show_usage(args[0].as_str());
-        return;
-    }
-
-    let mut listening_socket = TCPSocket::new();
-    listening_socket.set_reuseaddr();
-    listening_socket.bind(args[2].as_str(), args[3].parse::<u16>().unwrap());
-    for i in 0..5 {
-        listening_socket.listen(1);
-
-        let mut acc = listening_socket.accept();
-        let ree = acc.read(100);
-        println!("read: {}bytes", ree.len());
-        acc.write(b"hi, i will close!", true);
-        acc.close();
-    }
-    listening_socket.close();
-
-    println!("bye!");
 }
