@@ -49,6 +49,12 @@ Dev and debug use the original cs144 vbox ubuntu image
     //**** unittest inside a specific class
     $ cargo test --lib test_deref -- --show-output // specific unittest
 
+**make**
+
+    $ cd build && cmake ..
+    
+    $ make test // run all the tests, just under project folder, not build
+
 
 
 ## dev & profiling
