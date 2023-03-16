@@ -1,3 +1,6 @@
+pub mod arp_message;
+pub mod ethernet_frame;
+pub mod ethernet_header;
 pub mod fd_adapter;
 pub mod ipv4_datagram;
 pub mod ipv4_header;

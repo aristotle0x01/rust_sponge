@@ -28,6 +28,7 @@ pub type LossyTCPOverIPv4OverTunFdAdapter = LossyFdAdapter<TCPOverIPv4OverTunFdA
 pub type LossyTCPOverIPv4SpongeSocket = TCPSpongeSocket<LossyTCPOverIPv4OverTunFdAdapter>;
 
 pub mod byte_stream;
+pub mod network_interface;
 pub mod stream_reassembler;
 pub mod tcp_connection;
 pub mod tcp_helpers;
