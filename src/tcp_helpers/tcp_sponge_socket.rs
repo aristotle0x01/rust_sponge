@@ -2,15 +2,15 @@ use crate::tcp_connection::TCPConnection;
 use crate::tcp_helpers::fd_adapter::AsFdAdapterBaseMut;
 use crate::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use crate::tcp_helpers::tcp_state::{State, TCPState};
-use crate::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
+use crate::tcp_helpers::tuntap_adapter::{TCPOverIPv4OverEthernetAdapter, TCPOverIPv4OverTunFdAdapter};
 use crate::util::aeventloop::{AEventLoop, AInterestT};
 use crate::util::eventloop::Direction;
 use crate::util::eventloop::Result::Exit;
 use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDescriptor};
 use crate::util::socket::{AsSocketMut, LocalStreamSocket};
-use crate::util::tun::TunFD;
+use crate::util::tun::{TapFD, TunFD};
 use crate::util::util::{system_call, timestamp_ms};
-use crate::{SizeT, TCPOverIPv4SpongeSocket};
+use crate::{SizeT, TCPOverIPv4OverEthernetSpongeSocket, TCPOverIPv4SpongeSocket};
 use libc::{SHUT_RDWR, SHUT_WR};
 use rand::{thread_rng, Rng};
 use std::cmp::min;
@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
+use crate::tcp_helpers::ethernet_header::EthernetAddress;
 
 // Mutate from multiple threads without interior mutability?
 //      let file = Arc::new(Mutex::new(File::create("foo.txt").unwrap()));
@@ -530,6 +531,59 @@ impl CS144TCPSocket {
     }
 }
 impl AsLocalStreamSocketMut for CS144TCPSocket {
+    fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
+        self.sock.main_thread_data.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct FullStackSocket {
+    sock: TCPOverIPv4OverEthernetSpongeSocket,
+}
+impl FullStackSocket {
+    const LOCAL_TAP_IP_ADDRESS: &'static str = "169.254.10.9";
+    const LOCAL_TAP_NEXT_HOP_ADDRESS: &'static str = "169.254.10.1";
+
+    #[allow(dead_code)]
+    pub fn new() -> FullStackSocket {
+        let mut local_ethernet_address = EthernetAddress::default();
+        for b in local_ethernet_address.iter_mut() {
+            *b = (thread_rng().gen_range(0..u32::MAX) % 256) as u8;
+        }
+        local_ethernet_address[0] |= 0x02u8;
+        local_ethernet_address[0] &= 0xfeu8;
+
+        FullStackSocket {
+            sock: TCPOverIPv4OverEthernetSpongeSocket::new(TCPOverIPv4OverEthernetAdapter::new(
+                TapFD::new("tap10"),
+                local_ethernet_address,
+                Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_IP_ADDRESS).unwrap(),
+                Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_NEXT_HOP_ADDRESS).unwrap()
+            ))
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn connect(&mut self, _host: &str, _port: u16) {
+        let mut config = TCPConfig::default();
+        config.rt_timeout = 100;
+
+        let s_port: u16 = thread_rng().gen_range(20000..30000);
+        let adater_config = FdAdapterConfig {
+            source: SocketAddrV4::new(Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_IP_ADDRESS).unwrap(), s_port),
+            destination: SocketAddrV4::new(Ipv4Addr::from_str(_host).unwrap(), _port),
+            loss_rate_dn: 0,
+            loss_rate_up: 0,
+        };
+        self.sock.connect(&config, adater_config);
+    }
+
+    #[allow(dead_code)]
+    pub fn wait_until_closed(&mut self) {
+        self.sock.wait_until_closed();
+    }
+}
+impl AsLocalStreamSocketMut for FullStackSocket {
     fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
         self.sock.main_thread_data.clone()
     }

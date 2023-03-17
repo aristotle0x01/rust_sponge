@@ -1,10 +1,10 @@
-use rust_sponge::tcp_helpers::tcp_sponge_socket::{AsLocalStreamSocketMut, CS144TCPSocket};
+use rust_sponge::tcp_helpers::tcp_sponge_socket::{AsLocalStreamSocketMut, FullStackSocket};
 use rust_sponge::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut};
 use std::env;
 use std::net::ToSocketAddrs;
 use std::str;
 
-// ./webget cs144.keithw.org /hello
+// ./target/debug/webget cs144.keithw.org /hello
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -37,7 +37,7 @@ fn get_url(host: &str, url: &str) {
         .collect();
     println!("resolved: {:?}", server);
 
-    let mut socket = CS144TCPSocket::new();
+    let mut socket = FullStackSocket::new();
     socket.connect(server[0].ip().to_string().as_str(), server[0].port());
     {
         // using block to let lock auto drop, otherwise it would hang on lock in fn wait_until_closed
