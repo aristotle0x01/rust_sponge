@@ -22,8 +22,8 @@ pub struct NetworkInterface {
     ms_total_tick: SizeT,
 }
 impl NetworkInterface {
-    const gap_30s: SizeT = 30 * 1000;
-    const gap_5s: SizeT = 5 * 1000;
+    const GAP_30S: SizeT = 30 * 1000;
+    const GAP_5S: SizeT = 5 * 1000;
 
     #[allow(dead_code)]
     pub fn new(ether_addr: EthernetAddress, ip_addr: Ipv4Addr) -> NetworkInterface {
@@ -54,8 +54,8 @@ impl NetworkInterface {
         frame.header_mut().src = self.ethernet_address.clone();
         frame.header_mut().pro_type = EthernetHeader::TYPE_IPV4;
 
-        if let Some((t1, t2)) = self.ip_mac_cache.get(&next_hop_ip) {
-            frame.header_mut().dst = t2.clone();
+        if let Some((_, t2_)) = self.ip_mac_cache.get(&next_hop_ip) {
+            frame.header_mut().dst = t2_.clone();
             self.frames_out.push_back(frame);
             return;
         }
@@ -68,7 +68,7 @@ impl NetworkInterface {
             self.frames_need_fill.insert(next_hop_ip, list);
         }
 
-        if let Some(t) = self.arp_request_in_flight.get(&next_hop_ip) {
+        if let Some(_) = self.arp_request_in_flight.get(&next_hop_ip) {
             return;
         }
 
@@ -130,25 +130,25 @@ impl NetworkInterface {
             reply_frame.header_mut().dst = frame.header().src;
             reply_frame.header_mut().pro_type = EthernetHeader::TYPE_ARP;
             self.frames_out.push_back(reply_frame);
-
-            self.ip_mac_cache.insert(
-                arp.sender_ip_address,
-                (self.ms_total_tick, arp.sender_ethernet_address),
-            );
-
-            self.frames_need_fill.retain(|ip, list| {
-                return if let Some((t, ether_addr)) = self.ip_mac_cache.get(ip) {
-                    while !list.is_empty() {
-                        let mut l = list.remove(0);
-                        l.header_mut().dst = ether_addr.clone();
-                        self.frames_out.push_back(l);
-                    }
-                    false
-                } else {
-                    true
-                };
-            });
         }
+
+        self.ip_mac_cache.insert(
+            arp.sender_ip_address,
+            (self.ms_total_tick, arp.sender_ethernet_address),
+        );
+
+        self.frames_need_fill.retain(|ip, list| {
+            return if let Some((_, ether_addr)) = self.ip_mac_cache.get(ip) {
+                while !list.is_empty() {
+                    let mut l = list.remove(0);
+                    l.header_mut().dst = ether_addr.clone();
+                    self.frames_out.push_back(l);
+                }
+                false
+            } else {
+                true
+            };
+        });
 
         None
     }
@@ -158,9 +158,9 @@ impl NetworkInterface {
         self.ms_total_tick += ms_since_last_tick;
 
         self.ip_mac_cache
-            .retain(|_, (t, _)| (*t + NetworkInterface::gap_30s) > self.ms_total_tick);
+            .retain(|_, (t, _)| (*t + NetworkInterface::GAP_30S) > self.ms_total_tick);
         self.arp_request_in_flight
-            .retain(|_, t| (*t + NetworkInterface::gap_5s) > self.ms_total_tick);
+            .retain(|_, t| (*t + NetworkInterface::GAP_5S) > self.ms_total_tick);
     }
 
     #[allow(dead_code)]

@@ -71,9 +71,10 @@ impl Buffer {
         self.str_len -= n;
         if !self.storage.is_empty() && self.starting_offset == self.storage.len() {
             self.str_len = 0;
-            Arc::get_mut(&mut self.storage).unwrap().clear();
-            // self.storage.clear();
-            assert!(self.storage.is_empty());
+            if let Some(t) = Arc::get_mut(&mut self.storage) {
+                t.clear();
+                assert!(self.storage.is_empty());
+            }
         }
     }
 }

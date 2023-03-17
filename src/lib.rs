@@ -16,12 +16,15 @@ use crate::tcp_helpers::fd_adapter::TCPOverUDPSocketAdapter;
 use crate::tcp_helpers::ipv4_datagram::IPv4Datagram;
 use crate::tcp_helpers::lossy_fd_adapter::LossyFdAdapter;
 use crate::tcp_helpers::tcp_sponge_socket::TCPSpongeSocket;
-use crate::tcp_helpers::tuntap_adapter::TCPOverIPv4OverTunFdAdapter;
+use crate::tcp_helpers::tuntap_adapter::{
+    TCPOverIPv4OverEthernetAdapter, TCPOverIPv4OverTunFdAdapter,
+};
 
 pub type SizeT = usize;
 pub type InternetDatagram = IPv4Datagram;
 pub type TCPOverUDPSpongeSocket = TCPSpongeSocket<TCPOverUDPSocketAdapter>;
 pub type TCPOverIPv4SpongeSocket = TCPSpongeSocket<TCPOverIPv4OverTunFdAdapter>;
+pub type TCPOverIPv4OverEthernetSpongeSocket = TCPSpongeSocket<TCPOverIPv4OverEthernetAdapter>;
 pub type LossyTCPOverUDPSocketAdapter = LossyFdAdapter<TCPOverUDPSocketAdapter>;
 pub type LossyTCPOverUDPSpongeSocket = TCPSpongeSocket<LossyTCPOverUDPSocketAdapter>;
 pub type LossyTCPOverIPv4OverTunFdAdapter = LossyFdAdapter<TCPOverIPv4OverTunFdAdapter>;

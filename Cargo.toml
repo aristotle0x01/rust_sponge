@@ -54,6 +54,9 @@ path = "apps/tcp_ipv4.rs"
 name = "tcp_udp"
 path = "apps/tcp_udp.rs"
 [[bin]]
+name = "tcp_ip_ethernet"
+path = "apps/tcp_ip_ethernet.rs"
+[[bin]]
 name = "tun"
 path = "apps/tun.rs"
 [[bin]]
