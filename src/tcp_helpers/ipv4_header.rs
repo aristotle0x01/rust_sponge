@@ -15,7 +15,7 @@ pub struct IPv4Header {
     offset: u16,
     pub ttl: u8,
     pub proto: u8,
-    pub(crate) cksum: u16,
+    pub cksum: u16,
     pub src: u32,
     pub dst: u32,
 }

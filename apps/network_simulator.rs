@@ -11,6 +11,7 @@ use rust_sponge::{InternetDatagram, SizeT};
 use std::collections::{HashMap, VecDeque};
 use std::net::Ipv4Addr;
 use std::str::FromStr;
+use rust_sponge::util::util::InternetChecksum;
 
 fn main() {
     network_simulator();
@@ -97,7 +98,6 @@ impl Host {
     }
 
     fn expecting(&self, expected: &InternetDatagram) -> bool {
-        // let e = expected.serialize();
         for x in self.expecting_to_receive.iter() {
             if x.serialize() == expected.serialize() {
                 return true;
@@ -131,22 +131,24 @@ impl Host {
         header.dst = u32::from(destination.clone());
         header.len = ((header.hlen * 4) as SizeT + payload.size()) as u16;
         header.ttl = ttl;
-
         let dgram = InternetDatagram::new(
             header,
             payload,
         );
         self.interface.send_datagram(dgram.clone(), &self.next_hop);
 
+        // awkward way to calc cksum
+        let mut rd = dgram.serialize();
+        let mut rgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(rd));
+        assert_eq!(rgram.parse(0), ParseResult::NoError);
         eprintln!(
             "Host {} trying to send datagram (with next hop = {}): {} payload=\"{}\"",
             self.name,
             self.next_hop.to_string(),
-            dgram.header().summary(),
-            String::from_utf8_lossy(dgram.payload.str())
+            rgram.header().summary(),
+            String::from_utf8_lossy(rgram.payload.str())
         );
-
-        return dgram;
+        return rgram;
     }
 
     #[allow(dead_code)]

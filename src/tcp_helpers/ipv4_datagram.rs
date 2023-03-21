@@ -50,6 +50,7 @@ impl IPv4Datagram {
         );
 
         let mut header_out = self.header.clone();
+        header_out.cksum = 0;
 
         let mut check = InternetChecksum::new(0);
         check.add(header_out.serialize().as_slice());
