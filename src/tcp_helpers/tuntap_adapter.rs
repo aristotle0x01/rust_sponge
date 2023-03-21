@@ -121,8 +121,8 @@ impl AsFdAdapterBaseMut for TCPOverIPv4OverEthernetAdapter {
     }
 
     fn write_adp(&mut self, seg: &mut TCPSegment) {
-        let mut ip_dgram = self.ip_adapter.wrap_tcp_in_ip(seg);
-        self.interface.send_datagram(&mut ip_dgram, &self.next_hop);
+        let ip_dgram = self.ip_adapter.wrap_tcp_in_ip(seg);
+        self.interface.send_datagram(ip_dgram, &self.next_hop);
 
         self.send_pending();
     }

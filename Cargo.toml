@@ -65,6 +65,9 @@ path = "apps/webget.rs"
 [[bin]]
 name = "tcp_benchmark"
 path = "apps/tcp_benchmark.rs"
+[[bin]]
+name = "network_simulator"
+path = "apps/network_simulator.rs"
 
 [[example]]
 name = "bidirectional_stream_copy"

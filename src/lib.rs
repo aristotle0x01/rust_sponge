@@ -32,6 +32,7 @@ pub type LossyTCPOverIPv4SpongeSocket = TCPSpongeSocket<LossyTCPOverIPv4OverTunF
 
 pub mod byte_stream;
 pub mod network_interface;
+pub mod router;
 pub mod stream_reassembler;
 pub mod tcp_connection;
 pub mod tcp_helpers;

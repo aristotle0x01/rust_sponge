@@ -1,8 +1,11 @@
 use crate::tcp_connection::TCPConnection;
+use crate::tcp_helpers::ethernet_header::EthernetAddress;
 use crate::tcp_helpers::fd_adapter::AsFdAdapterBaseMut;
 use crate::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use crate::tcp_helpers::tcp_state::{State, TCPState};
-use crate::tcp_helpers::tuntap_adapter::{TCPOverIPv4OverEthernetAdapter, TCPOverIPv4OverTunFdAdapter};
+use crate::tcp_helpers::tuntap_adapter::{
+    TCPOverIPv4OverEthernetAdapter, TCPOverIPv4OverTunFdAdapter,
+};
 use crate::util::aeventloop::{AEventLoop, AInterestT};
 use crate::util::eventloop::Direction;
 use crate::util::eventloop::Result::Exit;
@@ -21,7 +24,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-use crate::tcp_helpers::ethernet_header::EthernetAddress;
 
 // Mutate from multiple threads without interior mutability?
 //      let file = Arc::new(Mutex::new(File::create("foo.txt").unwrap()));
@@ -558,8 +560,8 @@ impl FullStackSocket {
                 TapFD::new("tap10"),
                 local_ethernet_address,
                 Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_IP_ADDRESS).unwrap(),
-                Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_NEXT_HOP_ADDRESS).unwrap()
-            ))
+                Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_NEXT_HOP_ADDRESS).unwrap(),
+            )),
         }
     }
 
@@ -570,7 +572,10 @@ impl FullStackSocket {
 
         let s_port: u16 = thread_rng().gen_range(20000..30000);
         let adater_config = FdAdapterConfig {
-            source: SocketAddrV4::new(Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_IP_ADDRESS).unwrap(), s_port),
+            source: SocketAddrV4::new(
+                Ipv4Addr::from_str(FullStackSocket::LOCAL_TAP_IP_ADDRESS).unwrap(),
+                s_port,
+            ),
             destination: SocketAddrV4::new(Ipv4Addr::from_str(_host).unwrap(), _port),
             loss_rate_dn: 0,
             loss_rate_up: 0,

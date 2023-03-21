@@ -13,7 +13,7 @@ pub fn to_string(address: &EthernetAddress) -> String {
 pub struct EthernetHeader {
     pub(crate) dst: EthernetAddress,
     pub(crate) src: EthernetAddress,
-    pub(crate) pro_type: u16,
+    pub pro_type: u16,
 }
 impl EthernetHeader {
     pub const LENGTH: SizeT = 14 as SizeT;

@@ -4,7 +4,7 @@ use crate::util::parser::{NetParser, ParseResult};
 use crate::util::util::InternetChecksum;
 use crate::SizeT;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IPv4Datagram {
     header: IPv4Header,
     pub payload: Buffer,
@@ -32,24 +32,24 @@ impl IPv4Datagram {
             return ParseResult::PacketTooShort;
         }
 
-        eprintln!(
-            "     ****IPv4Datagram {}, {}",
-            self.header.summary(),
-            self.payload.size()
-        );
+        // eprintln!(
+        //     "     ****IPv4Datagram {}, {}",
+        //     self.header.summary(),
+        //     self.payload.size()
+        // );
 
         err
     }
 
     #[allow(dead_code)]
-    pub fn serialize(&mut self) -> Vec<u8> {
+    pub fn serialize(&self) -> Vec<u8> {
         assert_eq!(
             self.payload.size(),
             self.header.payload_length() as SizeT,
             "IPv4Datagram::serialize: payload is wrong size"
         );
 
-        let header_out = &mut self.header;
+        let mut header_out = self.header.clone();
 
         let mut check = InternetChecksum::new(0);
         check.add(header_out.serialize().as_slice());

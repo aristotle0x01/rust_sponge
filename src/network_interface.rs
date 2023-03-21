@@ -28,7 +28,7 @@ impl NetworkInterface {
     #[allow(dead_code)]
     pub fn new(ether_addr: EthernetAddress, ip_addr: Ipv4Addr) -> NetworkInterface {
         eprintln!(
-            "DEBUG: Network interface has Ethernet address {} and IP address {}\n",
+            "DEBUG: Network interface has Ethernet address {} and IP address {}",
             to_string(&ether_addr),
             ip_addr.to_string()
         );
@@ -44,7 +44,7 @@ impl NetworkInterface {
     }
 
     #[allow(dead_code)]
-    pub fn send_datagram(&mut self, dgram: &mut InternetDatagram, next_hop: &Ipv4Addr) {
+    pub fn send_datagram(&mut self, dgram: InternetDatagram, next_hop: &Ipv4Addr) {
         let next_hop_ip = u32::from(next_hop.clone());
 
         let mut frame = EthernetFrame {

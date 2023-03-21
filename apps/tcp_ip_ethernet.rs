@@ -61,7 +61,10 @@ fn check_argc(argc: i32, argv: &Vec<String>, curr: i32, err: &str) {
     }
 }
 
-fn get_config(argc: i32, argv: &Vec<String>) -> (TCPConfig, FdAdapterConfig, SocketAddrV4, String, bool) {
+fn get_config(
+    argc: i32,
+    argv: &Vec<String>,
+) -> (TCPConfig, FdAdapterConfig, SocketAddrV4, String, bool) {
     let mut c_fsm = TCPConfig::default();
     let mut c_filt = FdAdapterConfig {
         source: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),

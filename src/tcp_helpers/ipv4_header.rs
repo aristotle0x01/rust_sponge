@@ -6,18 +6,18 @@ use std::net::Ipv4Addr;
 #[derive(Debug, Copy, Clone)]
 pub struct IPv4Header {
     ver: u8,
-    pub(crate) hlen: u8,
+    pub hlen: u8,
     tos: u8,
     pub len: u16,
     id: u16,
     df: bool,
     mf: bool,
     offset: u16,
-    ttl: u8,
+    pub ttl: u8,
     pub proto: u8,
     pub(crate) cksum: u16,
-    pub(crate) src: u32,
-    pub(crate) dst: u32,
+    pub src: u32,
+    pub dst: u32,
 }
 impl IPv4Header {
     pub const LENGTH: SizeT = 20 as SizeT;
@@ -149,14 +149,14 @@ impl IPv4Header {
 
     pub fn summary(&self) -> String {
         format!(
-            "IPv{}, len={}, protocol={}, ttl={}, src={}, dst={})",
+            "IPv{}, len={}, protocol={},{}src={}, dst={})",
             self.ver,
             self.len,
             self.proto,
             if self.ttl >= 10 {
-                "".to_string()
+                " ".to_string()
             } else {
-                self.ttl.to_string()
+                " ttl=".to_string() + &self.ttl.to_string() + ", "
             },
             Ipv4Addr::from(self.src).to_string(),
             Ipv4Addr::from(self.dst).to_string()
