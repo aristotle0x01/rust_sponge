@@ -108,8 +108,6 @@ impl Host {
     }
 
     fn remove_expectation(&mut self, expected: &InternetDatagram) {
-        // let e = expected.serialize();
-
         for i_ in 0..self.expecting_to_receive.len() {
             if self.expecting_to_receive[i_].serialize() == expected.serialize() {
                 self.expecting_to_receive.remove(i_);
@@ -137,7 +135,7 @@ impl Host {
         );
         self.interface.send_datagram(dgram.clone(), &self.next_hop);
 
-        // awkward way to calc cksum
+        // awkward way to calc cksum here
         let mut rd = dgram.serialize();
         let mut rgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(rd));
         assert_eq!(rgram.parse(0), ParseResult::NoError);

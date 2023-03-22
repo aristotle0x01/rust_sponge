@@ -127,20 +127,15 @@ impl Router {
                     continue;
                 }
 
-                return Some((interface_num.clone(), next_hop.clone(), dst));
+                return Some((interface_num.clone(), next_hop.clone()));
             }
 
             None
         });
         match found {
-            Some((interface_num, next_hop, dst)) => {
-                if next_hop.is_some() {
-                    self.interface_mut(interface_num.clone())
-                        .send_datagram(dgram, &next_hop.unwrap());
-                } else {
-                    self.interface_mut(interface_num.clone())
-                        .send_datagram(dgram, &Ipv4Addr::from(dst));
-                }
+            Some((interface_num, next_hop)) => {
+                let next = next_hop.unwrap_or(Ipv4Addr::from(dst));
+                self.interface_mut(interface_num).send_datagram(dgram, &next);
             }
             None => {}
         }
