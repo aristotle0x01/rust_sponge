@@ -60,7 +60,7 @@ fn main() {
         .to_socket_addrs()
         .expect("Unable to resolve domain")
         .collect();
-    println!("resolved: {:?}", server);
+    eprintln!("resolved: {:?}", server);
 
     program_body(
         args[1] == "client",
@@ -244,6 +244,9 @@ fn program_body(is_client: bool, bounce_host: &str, bounce_port: u16, debug: boo
                 Box::new(move || {
                     let mut _router = router_rc_.lock().unwrap();
                     let f = _router.interface_mut(host_side).frames_out_mut();
+                    if f.is_empty() {
+                        return;
+                    }
                     if debug {
                         eprintln!("     Router->host:     {}", summary(f.front().unwrap()));
                     }
@@ -268,6 +271,9 @@ fn program_body(is_client: bool, bounce_host: &str, bounce_port: u16, debug: boo
                 Box::new(move || {
                     let mut _router = router_rc_.lock().unwrap();
                     let f = _router.interface_mut(internet_side).frames_out_mut();
+                    if f.is_empty() {
+                        return;
+                    }
                     if debug {
                         eprintln!("     Router->Internet:     {}", summary(f.front().unwrap()));
                     }
