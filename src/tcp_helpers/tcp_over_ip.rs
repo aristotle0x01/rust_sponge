@@ -7,7 +7,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 #[derive(Debug)]
 pub struct TCPOverIPv4Adapter {
-    pub(crate) fd_adapter_base: FdAdapterBase,
+    pub fd_adapter_base: FdAdapterBase,
 }
 impl TCPOverIPv4Adapter {
     #[allow(dead_code)]

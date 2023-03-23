@@ -1,6 +1,6 @@
 use crate::tcp_connection::TCPConnection;
 use crate::tcp_helpers::ethernet_header::EthernetAddress;
-use crate::tcp_helpers::fd_adapter::AsFdAdapterBaseMut;
+use crate::tcp_helpers::fd_adapter::{AsFdAdapterBaseMut, NetworkInterfaceAdapter};
 use crate::tcp_helpers::tcp_config::{FdAdapterConfig, TCPConfig};
 use crate::tcp_helpers::tcp_state::{State, TCPState};
 use crate::tcp_helpers::tuntap_adapter::{
@@ -13,7 +13,10 @@ use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDe
 use crate::util::socket::{AsSocketMut, LocalStreamSocket};
 use crate::util::tun::{TapFD, TunFD};
 use crate::util::util::{system_call, timestamp_ms};
-use crate::{SizeT, TCPOverIPv4OverEthernetSpongeSocket, TCPOverIPv4SpongeSocket};
+use crate::{
+    NetworkInterfaceSpongeSocket, SizeT, TCPOverIPv4OverEthernetSpongeSocket,
+    TCPOverIPv4SpongeSocket,
+};
 use libc::{SHUT_RDWR, SHUT_WR};
 use rand::{thread_rng, Rng};
 use std::cmp::min;
@@ -589,6 +592,86 @@ impl FullStackSocket {
     }
 }
 impl AsLocalStreamSocketMut for FullStackSocket {
+    fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
+        self.sock.main_thread_data.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct TCPSocketLab7 {
+    sock: NetworkInterfaceSpongeSocket,
+    local_address: SocketAddrV4,
+}
+impl TCPSocketLab7 {
+    #[allow(dead_code)]
+    pub fn new(ip_address: SocketAddrV4, next_hop: Ipv4Addr) -> TCPSocketLab7 {
+        TCPSocketLab7 {
+            sock: NetworkInterfaceSpongeSocket::new(NetworkInterfaceAdapter::new(
+                ip_address.ip().clone(),
+                next_hop,
+            )),
+            local_address: ip_address,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn connect(&mut self, _host: &str, _port: u16) {
+        let s_port: u16 = thread_rng().gen_range(20000..30000);
+
+        self.local_address = SocketAddrV4::new(self.local_address.ip().clone(), s_port);
+        eprintln!(
+            "DEBUG: Connecting from {}...",
+            self.local_address.to_string()
+        );
+
+        let multiplexer_config = FdAdapterConfig {
+            source: self.local_address.clone(),
+            destination: SocketAddrV4::new(Ipv4Addr::from_str(_host).unwrap(), _port),
+            loss_rate_dn: 0,
+            loss_rate_up: 0,
+        };
+        let mut config = TCPConfig::default();
+        config.rt_timeout = 12;
+
+        self.sock.connect(&config, multiplexer_config);
+    }
+
+    #[allow(dead_code)]
+    pub fn bind(&mut self, _host: &str, _port: u16) {
+        assert_eq!(
+            _host,
+            self.local_address.ip().to_string(),
+            "Cannot bind to {}:{}",
+            _host,
+            _port
+        );
+        self.local_address = SocketAddrV4::new(self.local_address.ip().clone(), _port);
+    }
+
+    #[allow(dead_code)]
+    pub fn listen_and_accept(&mut self) {
+        let multiplexer_config = FdAdapterConfig {
+            source: self.local_address.clone(),
+            destination: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
+            loss_rate_dn: 0,
+            loss_rate_up: 0,
+        };
+        let mut config = TCPConfig::default();
+        config.rt_timeout = 12;
+
+        self.sock.listen_and_accept(&config, multiplexer_config);
+    }
+
+    #[allow(dead_code)]
+    pub fn wait_until_closed(&mut self) {
+        self.sock.wait_until_closed();
+    }
+
+    pub fn adapter(&self) -> Arc<Mutex<NetworkInterfaceAdapter>> {
+        self.sock.datagram_adapter.clone()
+    }
+}
+impl AsLocalStreamSocketMut for TCPSocketLab7 {
     fn as_socket_mut(&mut self) -> Arc<Mutex<LocalStreamSocket>> {
         self.sock.main_thread_data.clone()
     }

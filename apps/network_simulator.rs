@@ -3,41 +3,18 @@ use rust_sponge::network_interface::NetworkInterface;
 use rust_sponge::router::{AsyncNetworkInterface, Router};
 use rust_sponge::tcp_helpers::arp_message::ARPMessage;
 use rust_sponge::tcp_helpers::ethernet_frame::EthernetFrame;
-use rust_sponge::tcp_helpers::ethernet_header::{EthernetAddress, EthernetHeader};
+use rust_sponge::tcp_helpers::ethernet_header::EthernetHeader;
 use rust_sponge::tcp_helpers::ipv4_header::IPv4Header;
 use rust_sponge::util::buffer::Buffer;
 use rust_sponge::util::parser::ParseResult;
+use rust_sponge::util::util::{random_host_ethernet_address, random_router_ethernet_address};
 use rust_sponge::{InternetDatagram, SizeT};
 use std::collections::{HashMap, VecDeque};
 use std::net::Ipv4Addr;
 use std::str::FromStr;
-use rust_sponge::util::util::InternetChecksum;
 
 fn main() {
     network_simulator();
-}
-
-fn random_host_ethernet_address() -> EthernetAddress {
-    let mut addr = EthernetAddress::default();
-    for b in addr.iter_mut() {
-        *b = (thread_rng().gen_range(0..u32::MAX) % 256) as u8;
-    }
-    addr[0] |= 0x02u8;
-    addr[0] &= 0xfeu8;
-
-    addr
-}
-
-fn random_router_ethernet_address() -> EthernetAddress {
-    let mut addr = EthernetAddress::default();
-    for b in addr.iter_mut() {
-        *b = (thread_rng().gen_range(0..u32::MAX) % 256) as u8;
-    }
-    addr[0] = 0x02u8;
-    addr[1] = 0;
-    addr[2] = 0;
-
-    addr
 }
 
 fn summary(frame: &EthernetFrame) -> String {
@@ -129,14 +106,11 @@ impl Host {
         header.dst = u32::from(destination.clone());
         header.len = ((header.hlen * 4) as SizeT + payload.size()) as u16;
         header.ttl = ttl;
-        let dgram = InternetDatagram::new(
-            header,
-            payload,
-        );
+        let dgram = InternetDatagram::new(header, payload);
         self.interface.send_datagram(dgram.clone(), &self.next_hop);
 
         // awkward way to calc cksum here
-        let mut rd = dgram.serialize();
+        let rd = dgram.serialize();
         let mut rgram = InternetDatagram::new(IPv4Header::new(), Buffer::new(rd));
         assert_eq!(rgram.parse(0), ParseResult::NoError);
         eprintln!(
@@ -476,24 +450,14 @@ impl Network {
         {
             let mut if1_ = self.router.rm_interface(self.eth2_id);
             let mut host_ = self.rm_host("cherrypie");
-            self.exchange_frames(
-                "router.eth2",
-                &mut if1_,
-                "cherrypie",
-                host_.interface_mut(),
-            );
+            self.exchange_frames("router.eth2", &mut if1_, "cherrypie", host_.interface_mut());
             self.router.add_interface_at(self.eth2_id, if1_);
             self.add_host("cherrypie", host_);
         }
         {
             let mut if1_ = self.router.rm_interface(self.hs4_id);
             let mut host_ = self.rm_host("hs_router");
-            self.exchange_frames(
-                "router.hs4",
-                &mut if1_,
-                "hs_router",
-                host_.interface_mut(),
-            );
+            self.exchange_frames("router.hs4", &mut if1_, "hs_router", host_.interface_mut());
             self.router.add_interface_at(self.hs4_id, if1_);
             self.add_host("hs_router", host_);
         }

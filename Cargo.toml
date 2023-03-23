@@ -68,6 +68,9 @@ path = "apps/tcp_benchmark.rs"
 [[bin]]
 name = "network_simulator"
 path = "apps/network_simulator.rs"
+[[bin]]
+name = "lab7"
+path = "apps/lab7.rs"
 
 [[example]]
 name = "bidirectional_stream_copy"

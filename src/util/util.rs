@@ -1,3 +1,5 @@
+use crate::tcp_helpers::ethernet_header::EthernetAddress;
+use rand::{thread_rng, Rng};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
@@ -70,4 +72,27 @@ pub fn timestamp_ms() -> u64 {
     };
 
     duration.as_millis() as u64
+}
+
+pub fn random_host_ethernet_address() -> EthernetAddress {
+    let mut addr = EthernetAddress::default();
+    for b in addr.iter_mut() {
+        *b = (thread_rng().gen_range(0..u32::MAX) % 256) as u8;
+    }
+    addr[0] |= 0x02u8;
+    addr[0] &= 0xfeu8;
+
+    addr
+}
+
+pub fn random_router_ethernet_address() -> EthernetAddress {
+    let mut addr = EthernetAddress::default();
+    for b in addr.iter_mut() {
+        *b = (thread_rng().gen_range(0..u32::MAX) % 256) as u8;
+    }
+    addr[0] = 0x02u8;
+    addr[1] = 0;
+    addr[2] = 0;
+
+    addr
 }

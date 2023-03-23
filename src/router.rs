@@ -135,7 +135,8 @@ impl Router {
         match found {
             Some((interface_num, next_hop)) => {
                 let next = next_hop.unwrap_or(Ipv4Addr::from(dst));
-                self.interface_mut(interface_num).send_datagram(dgram, &next);
+                self.interface_mut(interface_num)
+                    .send_datagram(dgram, &next);
             }
             None => {}
         }
