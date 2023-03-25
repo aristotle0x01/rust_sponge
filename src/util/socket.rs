@@ -2,7 +2,7 @@ use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDe
 use crate::util::util::system_call;
 use crate::SizeT;
 use libc::{c_int, size_t, sockaddr, socklen_t, AF_INET, SOCK_STREAM};
-use nix::sys::socket::{setsockopt, Shutdown, SockaddrIn};
+use nix::sys::socket::{setsockopt, MsgFlags, Shutdown, SockaddrIn};
 use std::ffi::c_void;
 use std::fmt::Debug;
 use std::mem;
@@ -72,19 +72,10 @@ impl Socket {
     }
 
     #[allow(dead_code)]
-    pub fn bind2(&self, address_: &SockaddrIn) {
-        let _ = nix::sys::socket::bind(self.fd_num(), address_);
-    }
-
-    #[allow(dead_code)]
     pub fn bind(&self, _host: &str, _port: u16) {
         let sin = SockaddrIn::from(SocketAddrV4::new(Ipv4Addr::from_str(_host).unwrap(), _port));
-        let _ = nix::sys::socket::bind(self.fd_num(), &sin);
-    }
-
-    #[allow(dead_code)]
-    pub fn connect2(&self, address_: &SockaddrIn) {
-        let _ = nix::sys::socket::connect(self.fd_num(), address_);
+        let r = nix::sys::socket::bind(self.fd_num(), &sin);
+        assert!(r.is_ok());
     }
 
     #[allow(dead_code)]
