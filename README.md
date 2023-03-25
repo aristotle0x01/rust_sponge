@@ -102,3 +102,47 @@ Dev and debug use the original cs144 vbox ubuntu image
 [Virtual Networking Devices - TUN, TAP and VETH Pairs Explained](https://www.packetcoders.io/virtual-networking-devices-tun-tap-and-veth-pairs-explained/)
 
 ![](https://www.packetcoders.io/content/images/2020/10/image2.png)
+
+## Lab7
+
+### udp bind issue
+
+Inorder to play with the client/server, I bind the udp to "127.0.0.1" and send to remote server, upon sending it would give out err like: <u>Os { code: 22, kind: InvalidInput, message: "Invalid argument" }'</u>
+
+Actually the problem is [UdpSocket.send_to fails with "invalid argument"](https://stackoverflow.com/questions/26732763/udpsocket-send-to-fails-with-invalid-argument)
+
+> You are binding the socket to localhost (the loopback interface), and then trying to communicate through that socket to an address not on that interface. If you instead bind to `0.0.0.0`, it will succeed. This means "all ipv4 interfaces". You can bind to a more specific address if necessary.
+
+### udp empty send issue
+
+By binding client to 5789 and server to 5790, cs144.keithw.org is not need as the proxy, 5789<->5790 can talk to each other directly.
+
+But the odd thing is after receive the first empty udp packet, the server is not responding anymore.
+
+```
+internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+```
+
+After a little debugging, the issue lies in **<u>FileDescriptor:read_into</u>** implementation:
+
+```
+pub fn read_into(&mut self, _buf: &mut Vec<u8>, _limit: u32) {
+		...
+    let bytes_read = unsafe {
+        libc::read(self.fd_num(), _buf.as_mut_ptr() as *mut c_void,size_to_read)};
+    system_call("read", bytes_read as i32, 0);
+    unsafe {_buf.set_len(bytes_read as usize);}
+
+    if _limit > 0 && bytes_read == 0 {
+        let mut fd_ = self.internal_fd.lock().unwrap();
+        fd_.eof = true;
+    }
+    ...
+}
+```
+
+When tried to read non zero size bytes, if returned zero, it would set eof to true, which lead further wait_next_event cancel of the fd.
+
+For this project this implementation is reasonable, but the actual libc socket eof logic would be interesting to check.
