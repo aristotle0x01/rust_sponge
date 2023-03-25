@@ -2,7 +2,7 @@ use crate::util::file_descriptor::{AsFileDescriptor, AsFileDescriptorMut, FileDe
 use crate::util::util::system_call;
 use crate::SizeT;
 use libc::{c_int, size_t, sockaddr, socklen_t, AF_INET, SOCK_STREAM};
-use nix::sys::socket::{setsockopt, MsgFlags, Shutdown, SockaddrIn};
+use nix::sys::socket::{setsockopt, Shutdown, SockaddrIn};
 use std::ffi::c_void;
 use std::fmt::Debug;
 use std::mem;

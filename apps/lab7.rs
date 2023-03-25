@@ -11,13 +11,12 @@ use rust_sponge::tcp_helpers::tcp_segment::TCPSegment;
 use rust_sponge::tcp_helpers::tcp_sponge_socket::AsLocalStreamSocketMut;
 use rust_sponge::util::aeventloop::AEventLoop;
 use rust_sponge::util::eventloop::Direction;
-use rust_sponge::util::file_descriptor::{AsFileDescriptor, FileDescriptor};
+use rust_sponge::util::file_descriptor::AsFileDescriptor;
 use rust_sponge::util::parser::ParseResult;
 use rust_sponge::util::socket::{AsSocket, AsSocketMut, LocalStreamSocket, UDPSocket};
 use rust_sponge::util::util::random_router_ethernet_address;
 use rust_sponge::{InternetDatagram, NetworkInterfaceSpongeSocket, SizeT};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, ToSocketAddrs, UdpSocket};
-use std::os::fd::AsRawFd;
+use std::net::{Ipv4Addr, SocketAddrV4, ToSocketAddrs};
 use std::process::exit;
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
@@ -44,6 +43,12 @@ use crate::bidirectional_stream_copy::bidirectional_stream_copy_sponge;
 // socat UDP4-RECVFROM:3001,fork UDP4-SENDTO:localhost:5790
 // ./target/debug/lab7 server localhost 3000
 // ./target/debug/lab7 client localhost 3001
+
+// test: 4
+// (with udp socket bind to 5790/5789 for server and client respectively)
+// tcpdump -i lo -tttt -s0 -X -vv  udp port 5789
+// ./target/debug/lab7 server 10.0.2.15 5789 debug
+// ./target/debug/lab7 client 10.0.2.15 5790 debug
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -142,9 +147,19 @@ fn program_body(is_client: bool, bounce_host: &str, bounce_port: u16, debug: boo
         eprintln!("internet_socket: {:?}", sock_addr_v4);
     }
     let bounce_address = SocketAddrV4::new(Ipv4Addr::from_str(bounce_host).unwrap(), bounce_port);
-    internet_socket.sendto(&bounce_address, &mut b"".to_vec());
-    internet_socket.sendto(&bounce_address, &mut b"".to_vec());
-    internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+    {
+        // actually these sends are unnecessary, either empty or nonempty
+
+        // **for test 4**, empty sends actually causing the server side fd eof set (FileDescriptor:read_into)
+        // which lead to further wait_next_event cancel of the fd, thus cuf off the client/server communication
+        // internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+        // internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+        // internet_socket.sendto(&bounce_address, &mut b"".to_vec());
+
+        internet_socket.sendto(&bounce_address, &mut b"1".to_vec());
+        internet_socket.sendto(&bounce_address, &mut b"2".to_vec());
+        internet_socket.sendto(&bounce_address, &mut b"3".to_vec());
+    }
 
     let internet_socket_rc = Arc::new(Mutex::new(internet_socket.as_file_descriptor().clone()));
 
@@ -323,11 +338,11 @@ fn program_body(is_client: bool, bounce_host: &str, bounce_port: u16, debug: boo
                     let mut frame = EthernetFrame::new();
                     let mut internet_socket_rc_1 = internet_socket_rc_.lock().unwrap();
                     let r = frame.parse(internet_socket_rc_1.read(u32::MAX));
+                    if debug {
+                        eprintln!("     Internet->router:     {}, {:?}", summary(&frame), r);
+                    }
                     if r != ParseResult::NoError {
                         return;
-                    }
-                    if debug {
-                        eprintln!("     Internet->router:     {}", summary(&frame));
                     }
                     let mut _router = router_rc_.lock().unwrap();
                     _router.interface_mut(internet_side).recv_frame(&frame);
