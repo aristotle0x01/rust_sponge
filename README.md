@@ -103,6 +103,10 @@ Dev and debug use the original cs144 vbox ubuntu image
 
 ![](https://www.packetcoders.io/content/images/2020/10/image2.png)
 
+**tcp state diagram**
+
+![](https://upload.wikimedia.org/wikipedia/commons/f/f6/Tcp_state_diagram_fixed_new.svg)
+
 ## Lab7
 
 ### udp bind issue
@@ -146,3 +150,16 @@ pub fn read_into(&mut self, _buf: &mut Vec<u8>, _limit: u32) {
 When tried to read non zero size bytes, if returned zero, it would set eof to true, which lead further wait_next_event cancel of the fd.
 
 For this project this implementation is reasonable, but the actual libc socket eof logic would be interesting to check.
+
+
+
+## Other worthy fields
+
+- smoltcp: a rust tcp/ip network stack implementation
+- **Rust Atomics and Locks：**https://marabos.nl/atomics/
+- **穷佐罗的Linux书：shell编程**
+- linux kernel: robert love
+- net tools: iptable, socat, tcpdump, tshark
+- plantegg的网络案例实战
+
+![](https://user-images.githubusercontent.com/2216435/227763226-e4028787-a605-489d-bf8d-870a76aff2c5.png)
