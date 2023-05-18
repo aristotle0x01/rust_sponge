@@ -11,6 +11,7 @@ both under release build:
 ## Environment
 
 Dev and debug use the original cs144 vbox ubuntu image
+<img src="https://user-images.githubusercontent.com/2216435/239113625-9aed33cf-0867-45b0-9668-1547a64081b0.png" style="zoom:50%;" />
 
 ### Network
 
